@@ -36,37 +36,50 @@ Add run commands and examples you think users will find useful. Provide an optio
 
 read on based on the source of your data you want visualized
 
-### Data From Gmail ###
 
-1. Press "sign in" button
-2. select what Google Alert you want glyphilated
-3. Select time range of articles glyphilated, using either the dropdown for quick access, or a beginning and end date can be selected to glyph the text from every link in the google alerts between two dates.
-4. press "retrieve Gmail articles" button at bottom right of the window.
+<details>
+  <summary><b>Data From Gmail</b></summary>
 
-### Data from Custom URL List, or Local Files ###
+  ### Data From Gmail  
+  1. Press "sign in" button  
+  2. Select what Google Alert you want glyphilated  
+  3. Select the time range of articles to be glyphilated, using either the dropdown for quick access or selecting a beginning and end date to glyph the text from every link in the Google Alerts between two dates.  
+  4. Press "Retrieve Gmail Articles" button at the bottom right of the window.  
+
+</details>
+
+
+
+<!-- ### Data from Custom URL List, or Local Files ###
 1. create an empty text (.txt) file in your working directory. This will be our searchlist file.
-
  For any URLs you want glyphed, copy and paste the URL into the searchlist file, separated by a new line. If you know any absolute filepaths for .txt files you want glyphed, add them separated by a new line as well.
-
 2. Click "other text options", then click the "upload searchlist" button, and select the searchlist you just created.
-
 3. if there are any .txt files you want to append to the searchlist file, you can also add them by browsing your filesystem. Press "Browse Files" button, and select however many text files you want to add, using shift or ctrl. 
+4. collect the data in the searchlist file by pressing "Collect Searchlist Data" -->
+<details>
+  <summary><b>Data from Custom URL List, or Local Files</b></summary>
 
-4. collect the data in the searchlist file by pressing "Collect Searchlist Data"
+  ### Data from Custom URL List, or Local Files  
+  1. create an empty text (.txt) file in your working directory. This will be our searchlist file.
+  For any URLs you want glyphed, copy and paste the URL into the searchlist file, separated by a new line. If you know any absolute filepaths for .txt files you want glyphed, add them separated by a new line as well.
+  2. Click "other text options", then click the "upload searchlist" button, and select the searchlist you just created.
+  3. if there are any .txt files you want to append to the searchlist file, you can also add them by browsing your filesystem. Press "Browse Files" button, and select however many text files you want to add, using shift or ctrl. 
+  4. collect the data in the searchlist file by pressing "Collect Searchlist Data"
 
-### Data from Pubmed ###
-1. click "other text options" button.
+</details>
 
-2. enter your Pubmed search query into the entry bar, just like you would on the website.
 
-3. enter how many results you want glyphed in your visualization, up to 200.
+<details>
+  <summary><b>Data from Pubmed</b></summary>
 
-4. press "confirm search" to lock in search parameters.
+  ### Data from Pubmed  
+  1. click "other text options" button.
+  2. enter your Pubmed search query into the entry bar, just like you would on the website.
+  3. enter how many results you want glyphed in your visualization, up to 200.
+  4. press "confirm search" to lock in search parameters.
+  5. press "execute search" to scrape pubmed and pull the data down
 
-5. press "execute search" to scrape pubmed and pull the data down
-
-2. 
-3. next press "count words" at bottom of screen to obtain the wordcoun
+</details>
 
 ## Contributing to <project_name>
 <!--- If your README is long or you have some specific process or steps you want contributors to follow, consider creating a separate CONTRIBUTING.md file--->
