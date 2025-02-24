@@ -34,7 +34,7 @@ Add run commands and examples you think users will find useful. Provide an optio
 ## Using <Glyphilator> ##
 1. launch with gui.exe
 
-read on based on the source of your data you want visualized
+   read on based on the source of your data you want visualized
 
 
 <details>
@@ -46,6 +46,7 @@ read on based on the source of your data you want visualized
   3. Select the time range of articles to be glyphilated, using either the dropdown for quick access or selecting a beginning and end date to glyph the text from every link in the Google Alerts between two dates.  
   4. Press "Retrieve Gmail Articles" button at the bottom right of the window.  
 
+  ![Visualization Example](readme_images\gmail_step123.png)
 </details>
 
 
@@ -65,7 +66,7 @@ read on based on the source of your data you want visualized
   2. Click "other text options", then click the "upload searchlist" button, and select the searchlist you just created.
   3. if there are any .txt files you want to append to the searchlist file, you can also add them by browsing your filesystem. Press "Browse Files" button, and select however many text files you want to add, using shift or ctrl. 
   4. collect the data in the searchlist file by pressing "Collect Searchlist Data"
-
+  ![Visualization Example](readme_images\customList_1234.png)
 </details>
 
 
@@ -78,8 +79,33 @@ read on based on the source of your data you want visualized
   3. enter how many results you want glyphed in your visualization, up to 200.
   4. press "confirm search" to lock in search parameters.
   5. press "execute search" to scrape pubmed and pull the data down
+  ![Visualization Example](readme_images\pubmed12345.png)
 
 </details>
+
+2. Select a wordlist group by clicking on it. You may use a premade wordlist group in groups 1,2,3 or 4. You can find the wordlist .txt files in your installation in GmailGlyphilatorV_n/wordlists/group_n. They can be edited directly there, or you may use the "delete" or "browse" buttons on the bottom right of the wordlist panel to browse to your own wordlist.txt file and add it to the group you have currently selected. You may also delete a wordlist.txt file from a group you have currently selected. 
+
+3. press "count words" button on the bottom right of the window. That will count up every time every word from a wordlist was used in your collected text media. To increase or decrease the strictness of  how close a word has to be for it to be "counted" can be modulated by the "search fuzziness" slide bar.
+
+4. press "create viz" button on the bottom right of the window. You may change viz parameters, like how words are counted or scaled, or what shape to use by changing the settings on the bottom left of the window.
+
+5. Finally press "view in A.N.T.Z." button to open a visualization of your data.
+![Visualization Example](readme_images\general2345.png)
+
+
+* Advanced features:
+
+<details>
+  <summary><b>Loading Old Mediasets/Wordcounts</b></summary>
+
+  ### Loading old data  
+  1. data is automatically saved in the autosaved_data folder in your installation for later use. 
+  2. If you want to create a new wordcount set using new wordlists for the same media set, press the "upload" button above the "retrieve gmail articles" button. Navigate to autosaved_data/*whatever_mediaset*/articleData.json to load the data.
+  3. If you want to create another visualization with different using the same wordcounts as in a previous search, press the "upload" button above the "count words" button on the bottom right. Then navigate to autosaved_data/*whatever_mediaset*/*date*_group_n/wordcount.json to load the wordcount.
+
+</details>
+
+
 
 ## Contributing to <project_name>
 <!--- If your README is long or you have some specific process or steps you want contributors to follow, consider creating a separate CONTRIBUTING.md file--->
