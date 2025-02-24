@@ -1,0 +1,1 @@
+nuitka --standalone --enable-plugin=tk-inter --include-data-dir=build/assets=build/assets --include-data-dir=antz=antz --include-data-dir=resources=resources --include-data-dir=wordlists/=wordlists/ --include-data-dir=auth/=auth/ build/gui.py 
