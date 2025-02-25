@@ -46,7 +46,7 @@ Add run commands and examples you think users will find useful. Provide an optio
   3. Select the time range of articles to be glyphilated, using either the dropdown for quick access or selecting a beginning and end date to glyph the text from every link in the Google Alerts between two dates.  
   4. Press "Retrieve Gmail Articles" button at the bottom right of the window.  
 
-  ![Visualization Example](readme_images/gmail_step123.png)
+  ![Visualization Example](/readme_images/gmail_step123.png)
 </details>
 
 
@@ -66,7 +66,7 @@ Add run commands and examples you think users will find useful. Provide an optio
   2. Click "other text options", then click the "upload searchlist" button, and select the searchlist you just created.
   3. if there are any .txt files you want to append to the searchlist file, you can also add them by browsing your filesystem. Press "Browse Files" button, and select however many text files you want to add, using shift or ctrl. 
   4. collect the data in the searchlist file by pressing "Collect Searchlist Data"
-  ![Visualization Example](readme_images/customList_1234.png)
+  ![Visualization Example](/readme_images/customList_1234.png)
 </details>
 
 
@@ -79,7 +79,7 @@ Add run commands and examples you think users will find useful. Provide an optio
   3. enter how many results you want glyphed in your visualization, up to 200.
   4. press "confirm search" to lock in search parameters.
   5. press "execute search" to scrape pubmed and pull the data down
-  ![Visualization Example](readme_images/pubmed12345.png)
+  ![Visualization Example](/readme_images/pubmed12345.png)
 
 </details>
 
@@ -90,7 +90,7 @@ Add run commands and examples you think users will find useful. Provide an optio
 4. press "create viz" button on the bottom right of the window. You may change viz parameters, like how words are counted or scaled, or what shape to use by changing the settings on the bottom left of the window.
 
 5. Finally press "view in A.N.T.Z." button to open a visualization of your data.
-![Visualization Example](readme_images/general2345.png)
+![Visualization Example](/readme_images/general2345.png)
 
 
 * Advanced features:
