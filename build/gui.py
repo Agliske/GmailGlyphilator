@@ -88,11 +88,13 @@ search_metadata = {
                                             "num_results_requested": 200,
                                             "scaling_range": (0.2,2.5),
                                             "scaling_type": "minmax",
-                                            "scaling_scope":"dataset",
+                                            "scaling_scope":"dataset", #determines if glyphs scaling is relative to max and min of whole dataset, or just 1 glyph.
                                             "scaling_wrt_wordlist":"total", #options ["total","percent","boolean"]
                                             "save_matched_words":False,
                                             "protos_save_path":"path/to/antz/save/dir",
-                                            "uploaded_articledata_path":"None"} #determines if glyphs scaling is relative to max and min of whole dataset, or just 1 glyph.
+                                            "uploaded_articledata_path":"None",
+                                            "scale_method":"wordlist",
+                                            "csv_headerFlags":[True,True]} #csv_headerflags determines if the [first row, first column] of csv dataset are identifiers or tags as opposed to data
 
 ############################################################################################################
 # Definitions
@@ -575,7 +577,7 @@ def extraBSWindow():
 
     bsWindow = Toplevel(window)
     bsWindow.title("Custom List & Pubmed")
-    bsWindow.geometry("655x250")
+    bsWindow.geometry("655x655")
     bsWindow.configure(bg = "#1C375E")
     # bsWindow.wm_attributes("-topmost", True)
     bsCanvas = Canvas(
@@ -618,6 +620,14 @@ def extraBSWindow():
 
     button_execute_pmed_search = Button(bsWindow,text="Execute \n Search", command=lambda: (threading.Thread(target=search_pubmed).start()))
     button_execute_pmed_search.place(x=425, y=78, width=70, height=38)
+
+    bsCanvas.create_text(30,250,text="Custom CSV",anchor="nw",fill="#FFFFFF",font=("Inter", 20 * -1))
+
+    button_upload_csv = Button(bsWindow, text="Upload \n CSV")
+    button_upload_csv.place(x=30, y=300, width=70, height=38)
+
+    button_collect_csv_data = Button(bsWindow,text=" Collect\nCSV Data")
+    button_collect_csv_data.place(x=110, y=300, width=70, height=38)
 
 def upload_url_list():
     global custom_url_searchlist

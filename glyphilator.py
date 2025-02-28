@@ -101,7 +101,7 @@ def wordlists_from_folder(dirpath):
 
     return wordlists
 
-def generateGlyphInput(articleData, wordlists, search_metadata = {
+def generateGlyphInput(articleData, wordlists, search_metadata = {#count words
                                             "geometrySelection": "Toroid", 
                                             "wordlist_paths" : ["path/to/WL1.txt","path/to/WL2.txt","path/to/WL3.txt"],
                                             "search_string": "sample string",
@@ -111,7 +111,7 @@ def generateGlyphInput(articleData, wordlists, search_metadata = {
                                             "scaling_scope":"dataset",
                                             "scaling_wrt_wordlist":"total", #options ["total","percent","boolean"]
                                             "search_fuzziness":0.6}
-                                            ):
+                                            ): 
     """
     generateGlyphInput _summary_
 
@@ -377,6 +377,43 @@ def generateGlyphInputConcurrent(articleData, wordlists, search_metadata = {
     
     return scaledAllGlyphData,word_hits,articleLengths,articleWordcounts,matched_words
     
+def generateGlyphInput_CSV(filepath_csv,search_metadata = {
+                                            "geometrySelection": "Toroid", 
+                                            "wordlist_paths" : ["path/to/WL1.txt","path/to/WL2.txt","path/to/WL3.txt"],
+                                            "search_string": "sample string",
+                                            "num_results_requested": 200,
+                                            "scaling_range": (0.2,2.5),
+                                            "scaling_type": "absolute",
+                                            "scaling_wrt_wordlist":"percent",
+                                            "save_matched_words":False,
+                                            "protos_save_path":"path/to/antz/save/dir",
+                                            "scale_method":"wordlist",
+                                            "csv_headerFlags":[True,True]}
+                                            ): 
+    flag_headerExists,flag_rowNameExists = search_metadata["csv_headerFlags"]
+    csv_array = np.genfromtxt(filepath_csv, delimiter=",",missing_values="",filling_values=0)
+    if flag_headerExists == True:
+        columnNames = csv_array[0,:]
+        print("column names ="), columnNames
+        np.delete(csv_array,0,axis=0) #delete header row
+    if flag_rowNameExists == True:
+        rowNames = csv_array[:,0]
+        print("rowNames = ",rowNames)
+        np.delete(csv_array,0,axis=1)
+    
+    csv_array.astype(float)
+    allGlyphData_dict = {
+        "total": None,
+        "percent": None,
+        "boolean":None
+    }
+
+    allGlyphData_csv = []
+
+    # for i in range(0,csv_array.shape[0]): #for each row in dataset
+        # oneglyphdata = csv_array[]
+
+
 def generate_centered_grid(N, step=1): # N: integer number of points we want generated| step: float value of x and y distance we want our points to be spaced by
 
     coordinates = []
@@ -478,7 +515,7 @@ def generateTitleURLTag(singleArticleData):
 
     return html_string
 
-def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcounts, wordlists, search_metadata = {
+def scaleFunc_ForWordlists(nonScaledAllGlyphData_dict, search_metadata = {
                                             "geometrySelection": "Toroid", 
                                             "wordlist_paths" : ["path/to/WL1.txt","path/to/WL2.txt","path/to/WL3.txt"],
                                             "search_string": "sample string",
@@ -488,31 +525,9 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
                                             "scaling_wrt_wordlist":"percent",
                                             "save_matched_words":False,
                                             "protos_save_path":"path/to/antz/save/dir"}
-                                            ): 
-    
-    
-    geometrySelectionDict = {"Toroid":7,
-                             "Sphere":3,
-                             "Cube":1,
-                             "Octahedron":11}
-
-    cwd = os.getcwd()
-    
-
-
-    core_glyph_csv_path = os.path.join(cwd,"resources","glyph_header.csv")
-    working_glyph_row_path = os.path.join(cwd,"resources","glyph_layer_2_model_ring.csv")
-    first_two_element_of_glyph_path = os.path.join(cwd,"resources","glyph_root_and_layer_1.csv")
-    tag_file_path = os.path.join(cwd,"resources","tag_file_header.csv")
-
-
-    antzfile = pd.read_csv(core_glyph_csv_path)
-    tagfile = pd.read_csv(tag_file_path)
+                                            ):
     
     nonScaledAllGlyphData = nonScaledAllGlyphData_dict[search_metadata["scaling_wrt_wordlist"]]
-    # print("glyphilator nonscaledallglyphdata = ", nonScaledAllGlyphData)
-    glyphDataCounts = nonScaledAllGlyphData
-
     if search_metadata["scaling_type"] == "minmax":
         
         min_target = search_metadata["scaling_range"][0]
@@ -533,8 +548,85 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
                 max_val = max(data_array[i])
                 scaledOneGlyphData = min_target + (data_array[i] - min_val) * (max_target - min_target) / (max_val - min_val)
                 allGlyphData.append(scaledOneGlyphData)
+        print("we scaled with our special function!!!")
+        return allGlyphData,nonScaledAllGlyphData
+
+def scaleFunc_forCSV(nonScaledAllGlyphData_dict,search_metadata = {
+                                            "geometrySelection": "Toroid", 
+                                            "wordlist_paths" : ["path/to/WL1.txt","path/to/WL2.txt","path/to/WL3.txt"],
+                                            "search_string": "sample string",
+                                            "num_results_requested": 200,
+                                            "scaling_range": (0.2,2.5),
+                                            "scaling_type": "absolute",
+                                            "scaling_wrt_wordlist":"percent",
+                                            "save_matched_words":False,
+                                            "protos_save_path":"path/to/antz/save/dir",
+                                            "scale_method":"wordlist"}
+                                            ): 
     
-    # print("allglyphdata = ",allGlyphData)
+    return "hello"
+def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcounts, wordlists, search_metadata = {
+                                            "geometrySelection": "Toroid", 
+                                            "wordlist_paths" : ["path/to/WL1.txt","path/to/WL2.txt","path/to/WL3.txt"],
+                                            "search_string": "sample string",
+                                            "num_results_requested": 200,
+                                            "scaling_range": (0.2,2.5),
+                                            "scaling_type": "absolute",
+                                            "scaling_wrt_wordlist":"percent",
+                                            "save_matched_words":False,
+                                            "protos_save_path":"path/to/antz/save/dir",
+                                            "scale_method":"wordlist",
+                                            "csv_headerFlags":[True,True]}
+                                            ): 
+    
+    
+    geometrySelectionDict = {"Toroid":7,
+                             "Sphere":3,
+                             "Cube":1,
+                             "Octahedron":11}
+
+    scaleChoiceDict = {"wordlist":scaleFunc_ForWordlists,
+                       "csv":scaleFunc_forCSV}
+    cwd = os.getcwd()
+    
+
+
+    core_glyph_csv_path = os.path.join(cwd,"resources","glyph_header.csv")
+    working_glyph_row_path = os.path.join(cwd,"resources","glyph_layer_2_model_ring.csv")
+    first_two_element_of_glyph_path = os.path.join(cwd,"resources","glyph_root_and_layer_1.csv")
+    tag_file_path = os.path.join(cwd,"resources","tag_file_header.csv")
+
+
+    antzfile = pd.read_csv(core_glyph_csv_path)
+    tagfile = pd.read_csv(tag_file_path)
+    
+    allGlyphData, nonScaledAllGlyphData = scaleChoiceDict[search_metadata["scale_method"]](nonScaledAllGlyphData_dict=nonScaledAllGlyphData_dict,search_metadata=search_metadata)
+    # nonScaledAllGlyphData = nonScaledAllGlyphData_dict[search_metadata["scaling_wrt_wordlist"]]
+    # # print("glyphilator nonscaledallglyphdata = ", nonScaledAllGlyphData)
+    glyphDataCounts = nonScaledAllGlyphData
+
+    # if search_metadata["scaling_type"] == "minmax":
+        
+    #     min_target = search_metadata["scaling_range"][0]
+    #     max_target = search_metadata["scaling_range"][1]
+        
+    #     data_array = array(nonScaledAllGlyphData)
+    #     print("scaling_scope is:",search_metadata["scaling_scope"])
+    #     if search_metadata["scaling_scope"] == "dataset":
+    #         min_val = min(data_array)
+    #         max_val = max(data_array)
+    #         allGlyphData = min_target + (data_array - min_val) * (max_target - min_target) / (max_val - min_val)
+    #         allGlyphData.tolist()
+        
+    #     if search_metadata["scaling_scope"] == "glyph":
+    #         allGlyphData = []
+    #         for i in range(0,len(data_array)):
+    #             min_val = min(data_array[i])
+    #             max_val = max(data_array[i])
+    #             scaledOneGlyphData = min_target + (data_array[i] - min_val) * (max_target - min_target) / (max_val - min_val)
+    #             allGlyphData.append(scaledOneGlyphData)
+    
+   
 
     num_rings = len(allGlyphData[0]) #check len of a single glyph list. for each index in the list we'll make a ring
     # print("num rings = ",num_rings)
