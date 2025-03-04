@@ -8,7 +8,7 @@ import tkcalendar
 # import tkinter as tk
 from tkinter import INSERT
 from tkinter import *
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, scrolledtext, ttk, filedialog,END, WORD
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, scrolledtext, ttk, filedialog,END, WORD, Checkbutton
 from tkinter.ttk import *
 # from tkcalendar import Calendar
 import os
@@ -19,7 +19,7 @@ import threading
 import datetime
 import subprocess
 from concurrent.futures import ProcessPoolExecutor
-from numpy import concatenate, array
+from numpy import concatenate, array, genfromtxt
 from functools import partial
 import json
 from re import sub
@@ -35,7 +35,7 @@ sys.path.append(DaveArticleScraperDir)
 
 
 
-from glyphilator import wordlists_from_folder,constructBasicGlyphs,searchlist_from_txtFile,generateGlyphInput
+from glyphilator import wordlists_from_folder,constructBasicGlyphs,searchlist_from_txtFile,generateGlyphInput,generateGlyphInput_CSV
 from pubmedFetcher import pubmedResults
 from paragraphParser import articleParse,txtFileParse
 # from asyncPubmedFetcher import pubmedResultsAsync
@@ -93,9 +93,10 @@ search_metadata = {
                                             "save_matched_words":False,
                                             "protos_save_path":"path/to/antz/save/dir",
                                             "uploaded_articledata_path":"None",
-                                            "scale_method":"wordlist",
-                                            "csv_headerFlags":[True,True]} #csv_headerflags determines if the [first row, first column] of csv dataset are identifiers or tags as opposed to data
-
+                                            "scale_method":"wordlist", #options ["wordlist","csv"] depending on what files are being processed
+                                            "csv_path":"path/to/csv.csv",
+                                            "csv_headerFlags":[True,True],#csv_headerflags determines if the [first row, first column] of csv dataset are identifiers or tags as opposed to data
+                                            "csv_heightcolumn":"None"} 
 ############################################################################################################
 # Definitions
 ############################################################################################################
@@ -299,7 +300,7 @@ def create_viz():
     #copying the custom url searchlist txt file into the wordlist destination folder, and setting search_metadata["search_string"] to point to the copied url
     
     if search_metadata["uploaded_articledata_path"] != "wordcounts_thru_upload": #check to see if any data was uploaded by
-        
+        search_metadata["subject_string"] = newsAlertDropdown.get()
         search_metadata["wordlist_paths"] = list_txt_filepaths
     # search_metadata["custom_list_file_paths"] = list_custom_files_paths
     # if custom_url_searchlist == None: search_metadata['search_string'] = [entry_1.get()] #THIS INFO WAS ASSIGNED WHEN SEARCH CONFIRM BUTTON CLIckEd AND when URL SEARCHLIST UPLOADED
@@ -308,7 +309,7 @@ def create_viz():
     # search_metadata["num_results_requested"] = num_results_requested
     search_metadata["scaling_range"] = (float(max_scale.get())/(6),float(max_scale.get())) #min scale is 1/6 the max scale
     # print(search_metadata["scaling_range"])
-    search_metadata["subject_string"] = newsAlertDropdown.get()
+    
     # print("allglyphdatadict = ", nonscaled_allGlyphData_dict)
 
     # print('generating antz and tag file. \n Initializing parallel processing')
@@ -574,6 +575,9 @@ def extraBSWindow():
     global entry_1
     global url_searchlist_textbox
     global requested_results_text
+    global tkColHeaderVar
+    global tkRowHeaderVar
+    global dropdown_heightcolumnSelector
 
     bsWindow = Toplevel(window)
     bsWindow.title("Custom List & Pubmed")
@@ -621,13 +625,28 @@ def extraBSWindow():
     button_execute_pmed_search = Button(bsWindow,text="Execute \n Search", command=lambda: (threading.Thread(target=search_pubmed).start()))
     button_execute_pmed_search.place(x=425, y=78, width=70, height=38)
 
-    bsCanvas.create_text(30,250,text="Custom CSV",anchor="nw",fill="#FFFFFF",font=("Inter", 20 * -1))
+    #custom csv widgets & options
+    bsCanvas.create_text(30,230,text="Custom CSV",anchor="nw",fill="#FFFFFF",font=("Inter", 20 * -1))
 
-    button_upload_csv = Button(bsWindow, text="Upload \n CSV")
+    button_upload_csv = Button(bsWindow, text="Upload \n CSV", command=upload_csv)
     button_upload_csv.place(x=30, y=300, width=70, height=38)
 
-    button_collect_csv_data = Button(bsWindow,text=" Collect\nCSV Data")
+    button_collect_csv_data = Button(bsWindow,text=" Collect\nCSV Data",command=collect_csv_data)
     button_collect_csv_data.place(x=110, y=300, width=70, height=38)
+
+    
+    tkRowHeaderVar = BooleanVar(value=1)
+    checkbox_csv_columnnames = ttk.Checkbutton(bsWindow,text="first row header",variable=tkRowHeaderVar,onvalue=1,offvalue=0,command=checkbox_clicked)
+    checkbox_csv_columnnames.place(x=30, y=255)
+    
+    tkColHeaderVar = BooleanVar(value=1)
+    checkbox_csv_rownames = ttk.Checkbutton(bsWindow, text = "first column header",variable=tkColHeaderVar,onvalue=1,offvalue=0,command=checkbox_clicked)
+    checkbox_csv_rownames.place(x=30, y=275)
+
+    bsCanvas.create_text(30,355,text="Column for Height Placement",anchor="nw",fill="#FFFFFF",font=("Inter", 12 * -1))
+    dropdown_heightcolumnSelector = ttk.Combobox(bsWindow,values=search_metadata["csv_heightcolumn_vals"])
+    dropdown_heightcolumnSelector.place(x=30, y=370, width=150, height=26)
+    dropdown_heightcolumnSelector.insert(0,"None")
 
 def upload_url_list():
     global custom_url_searchlist
@@ -776,6 +795,69 @@ def search_pubmed():
     search_metadata["uploaded_articledata_path"] = artData_directory_path
     print("article data saved to directory:")
     print(artData_directory_path)
+
+def upload_csv():
+    global search_metadata
+    global dropdown_heightcolumnSelector
+
+    csv_filepath = filedialog.askopenfile()
+    search_metadata["csv_path"] = csv_filepath
+    search_metadata["search_string"] = os.path.basename(str(csv_filepath))
+    search_metadata["subject_string"] = os.path.basename(str(csv_filepath))
+    print("CSV uploaded from filepath: \n", csv_filepath)
+
+    #read first row of csv
+    csv_array = genfromtxt(csv_filepath, delimiter=",",missing_values="",filling_values=0,skip_header=False,encoding="utf-8",dtype=str)
+    csv_heightcolumn_vals = ["None"]
+    
+    if search_metadata["csv_headerFlags"][0] == True:
+        if search_metadata["csv_headerFlags"][1] == True: #if the first column is not data, we dont want to include it in columnNames
+            columnNames = csv_array[0,1:]
+        if search_metadata["csv_headerFlags"][1] == False:
+            columnNames = csv_array[0,:]
+        for string in columnNames:
+            csv_heightcolumn_vals.append(string)
+            # print("appending string", string)
+
+    if search_metadata["csv_headerFlags"][0] == False:
+
+        if search_metadata["csv_headerFlags"][1] == True: #if the first column is not data, we dont want to include it in columnNames
+            numColumns = len(csv_array[0,1:])
+            
+        if search_metadata["csv_headerFlags"][1] == False:
+            numColumns = len(csv_array[0,:])
+        
+        for i in range(0,numColumns):
+            string = "Column_" + str(i+1)
+            csv_heightcolumn_vals.append(string)
+    
+    # print(search_metadata["csv_heightcolumn_vals"])
+    dropdown_heightcolumnSelector["values"] = csv_heightcolumn_vals
+
+def collect_csv_data():
+    global final_articleData
+    global search_metadata
+    global nonscaled_allGlyphData_dict
+
+    csv_filepath = search_metadata["csv_path"]
+    search_metadata["scale_method"] = "csv"
+    search_metadata["uploaded_articledata_path"] = "wordcounts_thru_upload"
+
+    nonscaled_allGlyphData_dict, articleData, search_metadata = generateGlyphInput_CSV(csv_filepath,search_metadata=search_metadata)
+    final_articleData = articleData
+    # print("wordlist_paths = ",search_metadata["wordlist_paths"])
+    
+    print("collected CSV data")
+
+def checkbox_clicked():
+    global search_metadata
+    global tkColHeaderVar
+    global tkRowHeaderVar
+
+    search_metadata["csv_headerFlags"] = [tkRowHeaderVar.get(),tkColHeaderVar.get()]
+    print(search_metadata["csv_headerFlags"])
+
+    
 
 #main
 def main():

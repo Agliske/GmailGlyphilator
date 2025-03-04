@@ -6,3 +6,7 @@ gui.dist/*
 antz/*
 *.7z
 *.zip
+autosaved_data/*
+build/__pycache__/*
+__pycache__/*
+*.pyc

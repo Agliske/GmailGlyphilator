@@ -10,6 +10,7 @@ from concurrent.futures import ProcessPoolExecutor
 import itertools
 from multiprocessing import Manager
 from multiprocessing.managers import DictProxy
+from copy import deepcopy
 
 import time
 pd.set_option("mode.copy_on_write", True)
@@ -28,6 +29,8 @@ pd.set_option("mode.copy_on_write", True)
 
 
 cwd = os.getcwd()
+
+
 
 def searchlist_from_txtFile(filepath):
     """_summary_
@@ -377,7 +380,7 @@ def generateGlyphInputConcurrent(articleData, wordlists, search_metadata = {
     
     return scaledAllGlyphData,word_hits,articleLengths,articleWordcounts,matched_words
     
-def generateGlyphInput_CSV(filepath_csv,search_metadata = {
+def generateGlyphInput_CSV(filepath_csv, search_metadata = {
                                             "geometrySelection": "Toroid", 
                                             "wordlist_paths" : ["path/to/WL1.txt","path/to/WL2.txt","path/to/WL3.txt"],
                                             "search_string": "sample string",
@@ -390,29 +393,52 @@ def generateGlyphInput_CSV(filepath_csv,search_metadata = {
                                             "scale_method":"wordlist",
                                             "csv_headerFlags":[True,True]}
                                             ): 
+    
+    
+
     flag_headerExists,flag_rowNameExists = search_metadata["csv_headerFlags"]
-    csv_array = np.genfromtxt(filepath_csv, delimiter=",",missing_values="",filling_values=0)
+    csv_array = np.genfromtxt(filepath_csv, delimiter=",",missing_values="",filling_values=0,skip_header=False,encoding="utf-8",dtype=str)
+    # print("csv_array = \n", csv_array)
     if flag_headerExists == True:
-        columnNames = csv_array[0,:]
-        print("column names ="), columnNames
-        np.delete(csv_array,0,axis=0) #delete header row
+        columnNames = csv_array[0,1:]
+        # print("column names =", columnNames)
+        csv_array = np.delete(csv_array,0,axis=0) #delete header row
     if flag_rowNameExists == True:
         rowNames = csv_array[:,0]
-        print("rowNames = ",rowNames)
-        np.delete(csv_array,0,axis=1)
-    
-    csv_array.astype(float)
+        # print("rowNames = ",rowNames)
+        csv_array = np.delete(csv_array,0,axis=1)
+    # print("csv_array after r/c deletion = \n ", csv_array)
+    csv_array = csv_array.astype(float)
     allGlyphData_dict = {
         "total": None,
         "percent": None,
         "boolean":None
     }
 
+    articleData = []
     allGlyphData_csv = []
 
-    # for i in range(0,csv_array.shape[0]): #for each row in dataset
-        # oneglyphdata = csv_array[]
+    for i in range(0,csv_array.shape[0]): #for each row in dataset
+        oneglyphdata = csv_array[i,:]
+        # print("i = ",i,"oneglyphdata =", oneglyphdata)
+        allGlyphData_csv.append(oneglyphdata.tolist())
 
+        singleArticleData = {
+        "url": None,
+        "title": rowNames[i], #filling title with row identifier so it shows up as tag in root node
+        "date": None,
+        "content": None
+        }
+        articleData.append(singleArticleData)
+
+    
+    search_metadata["wordlist_paths"] = columnNames #adding column names to wordlist paths so they show up as tags on the reference glyph
+    
+    allGlyphData_dict["total"] = allGlyphData_csv
+    allGlyphData_dict["percent"] = allGlyphData_csv
+    allGlyphData_dict["boolean"] = allGlyphData_csv
+
+    return allGlyphData_dict,articleData,search_metadata
 
 def generate_centered_grid(N, step=1): # N: integer number of points we want generated| step: float value of x and y distance we want our points to be spaced by
 
@@ -548,7 +574,7 @@ def scaleFunc_ForWordlists(nonScaledAllGlyphData_dict, search_metadata = {
                 max_val = max(data_array[i])
                 scaledOneGlyphData = min_target + (data_array[i] - min_val) * (max_target - min_target) / (max_val - min_val)
                 allGlyphData.append(scaledOneGlyphData)
-        print("we scaled with our special function!!!")
+        
         return allGlyphData,nonScaledAllGlyphData
 
 def scaleFunc_forCSV(nonScaledAllGlyphData_dict,search_metadata = {
@@ -563,8 +589,29 @@ def scaleFunc_forCSV(nonScaledAllGlyphData_dict,search_metadata = {
                                             "protos_save_path":"path/to/antz/save/dir",
                                             "scale_method":"wordlist"}
                                             ): 
-    
-    return "hello"
+    unscaledData = nonScaledAllGlyphData_dict["total"]
+    scaled_allGlyphData = deepcopy(unscaledData)
+    # print("unscaled data at beginning = \n",unscaledData)
+    for i in range(0,len(unscaledData[0])): #for each column in csv:
+        columnData = []
+        for j in range(0,len(unscaledData)): #for each row in csv
+            columnData.append(unscaledData[j][i])
+        
+        # print(columnData)
+
+        if search_metadata["scaling_type"] == "minmax":
+            min_target = search_metadata["scaling_range"][0]
+            max_target = search_metadata["scaling_range"][1]
+            column_array = array(columnData)
+            min_val = min(column_array)
+            max_val = max(column_array)
+            scaledColumn = min_target + (column_array - min_val) * (max_target - min_target) / (max_val - min_val)
+        
+        for j in range(0,len(unscaledData)):
+            scaled_allGlyphData[j][i] = scaledColumn[j] #replacing the entry with the scaled version
+    # print("unscaled data at end = \n",unscaledData)
+    return scaled_allGlyphData,unscaledData
+
 def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcounts, wordlists, search_metadata = {
                                             "geometrySelection": "Toroid", 
                                             "wordlist_paths" : ["path/to/WL1.txt","path/to/WL2.txt","path/to/WL3.txt"],
@@ -599,7 +646,7 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
 
     antzfile = pd.read_csv(core_glyph_csv_path)
     tagfile = pd.read_csv(tag_file_path)
-    
+    # print("search_metadata = ", search_metadata)
     allGlyphData, nonScaledAllGlyphData = scaleChoiceDict[search_metadata["scale_method"]](nonScaledAllGlyphData_dict=nonScaledAllGlyphData_dict,search_metadata=search_metadata)
     # nonScaledAllGlyphData = nonScaledAllGlyphData_dict[search_metadata["scaling_wrt_wordlist"]]
     # # print("glyphilator nonscaledallglyphdata = ", nonScaledAllGlyphData)
@@ -795,7 +842,7 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
                 
                 
                 
-                # print("j = ",j,"len(wordlist_paths)=",len(search_metadata["wordlist_paths"]))
+                
                 tag_string = '<a href="' + search_metadata["wordlist_paths"][j] + '">' + os.path.basename(search_metadata["wordlist_paths"][j]) + '<a>'
                 
                 
