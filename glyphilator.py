@@ -459,6 +459,27 @@ def generate_centered_grid(N, step=1): # N: integer number of points we want gen
     
     return coordinates
 
+def generate_glyphHeights(nonScaledAllGlyphData_dict,search_metadata):
+    
+    allGlyphData = nonScaledAllGlyphData_dict[search_metadata["scaling_wrt_wordlist"]]
+    if search_metadata["csv_heightcolumn"] == -1:
+        heights = np.zeros((len(allGlyphData)))
+        return heights
+    
+    
+    
+    columnData = []
+    for i in range(0,len(allGlyphData)):
+        columnData.append(allGlyphData[i][search_metadata["csv_heightcolumn"]])
+
+    column_array = np.array(columnData)
+    min_height = search_metadata["csv_placementData"]["height_min"]
+    max_height = search_metadata["csv_placementData"]["height_max"]
+    min_val = min(column_array)
+    max_val = max(column_array)
+    heights = min_height + (column_array - min_val) * (max_height - min_height) / (max_val - min_val)
+    return heights
+    
 def evenlySpacedAngles(N,objAngle = 360): #N: how many elements we want evenly spaced around 360deg object
     
     step = objAngle/N
@@ -623,8 +644,9 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
                                             "save_matched_words":False,
                                             "protos_save_path":"path/to/antz/save/dir",
                                             "scale_method":"wordlist",
-                                            "csv_headerFlags":[True,True]}
-                                            ): 
+                                            "csv_headerFlags":[True,True],
+                                            "csv_placementData":{"height_min":0,"height_max":30}
+                                            }): 
     
     
     geometrySelectionDict = {"Toroid":7,
@@ -680,7 +702,7 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
     ring_angles = evenlySpacedAngles(num_rings)
     glyphSeparationDistance = 10
     glyphLocations = generate_centered_grid(len(allGlyphData),glyphSeparationDistance) #generate (x,y) coords for each root glyph
-    
+    glyphHeights = generate_glyphHeights(nonScaledAllGlyphData_dict,search_metadata=search_metadata)
 
     colors = chooseBasicColors(allGlyphData)
 
@@ -727,6 +749,9 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
             working_glyph['translate_y'] = working_glyph['translate_y'].astype(float,copy=False)
             working_glyph.loc[working_glyph['parent_id'] == 0,'translate_y'] = glyphLocations[i][1] #so we add the x,y coord of where we want the glyph
 
+            working_glyph.loc[working_glyph['parent_id'] == 0,'translate_z'] =None
+            working_glyph['translate_z'] = working_glyph['translate_z'].astype(float,copy=False)
+            working_glyph.loc[working_glyph['parent_id'] == 0,'translate_z'] = glyphHeights[i] #add in glyph heights
             #scaling toroid based upon how long the content was.
             # working_glyph.loc[working_glyph.index[1],['ratio']] = articleLengths[i]
 

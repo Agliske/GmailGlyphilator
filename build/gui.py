@@ -96,7 +96,9 @@ search_metadata = {
                                             "scale_method":"wordlist", #options ["wordlist","csv"] depending on what files are being processed
                                             "csv_path":"path/to/csv.csv",
                                             "csv_headerFlags":[True,True],#csv_headerflags determines if the [first row, first column] of csv dataset are identifiers or tags as opposed to data
-                                            "csv_heightcolumn":"None"} 
+                                            "csv_heightcolumn":-1,
+                                            "csv_placementData":{"height_min":0,"height_max":30}  #-1 signifies no column, all glyphs on y plane
+                                            } 
 ############################################################################################################
 # Definitions
 ############################################################################################################
@@ -644,8 +646,9 @@ def extraBSWindow():
     checkbox_csv_rownames.place(x=30, y=275)
 
     bsCanvas.create_text(30,355,text="Column for Height Placement",anchor="nw",fill="#FFFFFF",font=("Inter", 12 * -1))
-    dropdown_heightcolumnSelector = ttk.Combobox(bsWindow,values=search_metadata["csv_heightcolumn_vals"])
+    dropdown_heightcolumnSelector = ttk.Combobox(bsWindow,values=["None"])
     dropdown_heightcolumnSelector.place(x=30, y=370, width=150, height=26)
+    dropdown_heightcolumnSelector.bind("<<ComboboxSelected>>", dropdown_heightcolumnSelector_clicked)
     dropdown_heightcolumnSelector.insert(0,"None")
 
 def upload_url_list():
@@ -800,7 +803,7 @@ def upload_csv():
     global search_metadata
     global dropdown_heightcolumnSelector
 
-    csv_filepath = filedialog.askopenfile()
+    csv_filepath = filedialog.askopenfilename()
     search_metadata["csv_path"] = csv_filepath
     search_metadata["search_string"] = os.path.basename(str(csv_filepath))
     search_metadata["subject_string"] = os.path.basename(str(csv_filepath))
@@ -857,7 +860,16 @@ def checkbox_clicked():
     search_metadata["csv_headerFlags"] = [tkRowHeaderVar.get(),tkColHeaderVar.get()]
     print(search_metadata["csv_headerFlags"])
 
-    
+def dropdown_heightcolumnSelector_clicked(event):
+    global dropdown_heightcolumnSelector
+    global search_metadata
+    string = dropdown_heightcolumnSelector.get()
+    # print("col selected = ", string)
+    # print("cboxvalues=",dropdown_heightcolumnSelector["values"])
+    values = dropdown_heightcolumnSelector["values"]
+    column = list(values).index(string) - 1
+    # print("selected column = ",column)
+    search_metadata["csv_heightcolumn"] = column
 
 #main
 def main():
