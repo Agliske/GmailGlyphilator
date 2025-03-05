@@ -459,6 +459,7 @@ def generate_centered_grid(N, step=1): # N: integer number of points we want gen
     
     return coordinates
 
+# def generate_arc
 def generate_glyphHeights(nonScaledAllGlyphData_dict,search_metadata):
     
     allGlyphData = nonScaledAllGlyphData_dict[search_metadata["scaling_wrt_wordlist"]]

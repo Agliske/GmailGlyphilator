@@ -96,8 +96,8 @@ search_metadata = {
                                             "scale_method":"wordlist", #options ["wordlist","csv"] depending on what files are being processed
                                             "csv_path":"path/to/csv.csv",
                                             "csv_headerFlags":[True,True],#csv_headerflags determines if the [first row, first column] of csv dataset are identifiers or tags as opposed to data
-                                            "csv_heightcolumn":-1,
-                                            "csv_placementData":{"height_min":0,"height_max":30}  #-1 signifies no column, all glyphs on y plane
+                                            "csv_heightcolumn":-1,#-1 signifies no column, all glyphs on y plane
+                                            "csv_placementData":{"height_min":0,"height_max":30}  
                                             } 
 ############################################################################################################
 # Definitions
@@ -244,6 +244,8 @@ def count_articleData_words():
 def create_viz():
     global scaled_allGlyphData
     global glyphDataCounts
+    global min_height_entry
+    global max_height_entry
     print("Creating Glyphs")
     # print("glyphDataCounts = ", glyphDataCounts)
         #create a new directory each time the button is pressed, storing the new viz
@@ -310,6 +312,8 @@ def create_viz():
     search_metadata["geometrySelection"] = geometryDropdown.get()
     # search_metadata["num_results_requested"] = num_results_requested
     search_metadata["scaling_range"] = (float(max_scale.get())/(6),float(max_scale.get())) #min scale is 1/6 the max scale
+    search_metadata["csv_placementData"]["height_min"] = float(min_height_entry.get())
+    search_metadata["csv_placementData"]["height_max"] = float(max_height_entry.get())
     # print(search_metadata["scaling_range"])
     
     # print("allglyphdatadict = ", nonscaled_allGlyphData_dict)
@@ -580,6 +584,8 @@ def extraBSWindow():
     global tkColHeaderVar
     global tkRowHeaderVar
     global dropdown_heightcolumnSelector
+    global min_height_entry
+    global max_height_entry
 
     bsWindow = Toplevel(window)
     bsWindow.title("Custom List & Pubmed")
@@ -645,11 +651,19 @@ def extraBSWindow():
     checkbox_csv_rownames = ttk.Checkbutton(bsWindow, text = "first column header",variable=tkColHeaderVar,onvalue=1,offvalue=0,command=checkbox_clicked)
     checkbox_csv_rownames.place(x=30, y=275)
 
-    bsCanvas.create_text(30,355,text="Column for Height Placement",anchor="nw",fill="#FFFFFF",font=("Inter", 12 * -1))
+    bsCanvas.create_text(30,355,text="Height Placement Column, Height(max,min)",anchor="nw",fill="#FFFFFF",font=("Inter", 12 * -1))
     dropdown_heightcolumnSelector = ttk.Combobox(bsWindow,values=["None"])
     dropdown_heightcolumnSelector.place(x=30, y=370, width=150, height=26)
     dropdown_heightcolumnSelector.bind("<<ComboboxSelected>>", dropdown_heightcolumnSelector_clicked)
     dropdown_heightcolumnSelector.insert(0,"None")
+
+    min_height_entry = Entry(bsWindow)
+    min_height_entry.place(x=185, y=370, width=30, height=26)
+    min_height_entry.insert(0,"0")
+
+    max_height_entry = Entry(bsWindow)
+    max_height_entry.place(x=215, y=370, width=30, height=26)
+    max_height_entry.insert(0,"30")
 
 def upload_url_list():
     global custom_url_searchlist
@@ -800,6 +814,8 @@ def search_pubmed():
     print(artData_directory_path)
 
 def upload_csv():
+    global min_scale
+    global max_scale
     global search_metadata
     global dropdown_heightcolumnSelector
 
@@ -816,8 +832,11 @@ def upload_csv():
     if search_metadata["csv_headerFlags"][0] == True:
         if search_metadata["csv_headerFlags"][1] == True: #if the first column is not data, we dont want to include it in columnNames
             columnNames = csv_array[0,1:]
+            
         if search_metadata["csv_headerFlags"][1] == False:
             columnNames = csv_array[0,:]
+        
+        x = len(columnNames)
         for string in columnNames:
             csv_heightcolumn_vals.append(string)
             # print("appending string", string)
@@ -829,13 +848,23 @@ def upload_csv():
             
         if search_metadata["csv_headerFlags"][1] == False:
             numColumns = len(csv_array[0,:])
-        
+        x = numColumns
         for i in range(0,numColumns):
             string = "Column_" + str(i+1)
             csv_heightcolumn_vals.append(string)
     
     # print(search_metadata["csv_heightcolumn_vals"])
     dropdown_heightcolumnSelector["values"] = csv_heightcolumn_vals
+
+    
+    scalingDict = {"Sphere":(19*x**2)/(x**3),
+                   "Cube":(19*x**2)/(x**3),
+                   "Octahedron":(19*x**2)/(x**3),
+                   "Toroid": (19*x**2)/(x**3)
+                   }
+
+    max_scale.delete(0,END)
+    max_scale.insert(0,scalingDict[geometryDropdown.get()])
 
 def collect_csv_data():
     global final_articleData
@@ -887,6 +916,7 @@ def main():
     global subjects
     global headlessDropdown
     global wordlistScalingDropdown
+
     scopes = ['https://www.googleapis.com/auth/gmail.readonly']
 
     
