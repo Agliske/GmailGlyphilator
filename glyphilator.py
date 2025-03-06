@@ -440,7 +440,7 @@ def generateGlyphInput_CSV(filepath_csv, search_metadata = {
 
     return allGlyphData_dict,articleData,search_metadata
 
-def generate_centered_grid(N, step=1): # N: integer number of points we want generated| step: float value of x and y distance we want our points to be spaced by
+def generate_centered_grid(N, step=10): # N: integer number of points we want generated| step: float value of x and y distance we want our points to be spaced by
 
     coordinates = []
     
@@ -459,7 +459,30 @@ def generate_centered_grid(N, step=1): # N: integer number of points we want gen
     
     return coordinates
 
-# def generate_arc
+def generate_arc(N,step = 10):
+    """
+    generate_arc generates list N of (x,y) coords in the shape of 270 deg arc
+
+    Args:
+        N (int): number of points
+        step (float, optional): distance the points will be spaced by. Defaults to 10.
+    """
+
+    # totalPoints = 360/270 * N
+    # r = (step * totalPoints)/(4*math.pi**2)
+    # stepAngle = 2*math.pi/(totalPoints-1)
+    sweepAngle = 3*math.pi/2
+    stepAngle = sweepAngle/(N-1)
+    r = step/stepAngle
+    coordsList = []
+    startingAngle = 5*math.pi/4
+    for i in range(0,N):
+        angleRad = startingAngle - i*stepAngle
+        
+        coord_xy = (r*math.cos(angleRad),r*math.sin(angleRad))
+        coordsList.append(coord_xy)
+    return coordsList
+
 def generate_glyphHeights(nonScaledAllGlyphData_dict,search_metadata):
     
     allGlyphData = nonScaledAllGlyphData_dict[search_metadata["scaling_wrt_wordlist"]]
@@ -641,6 +664,7 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
                                             "num_results_requested": 200,
                                             "scaling_range": (0.2,2.5),
                                             "scaling_type": "absolute",
+                                            "glyph_pattern":"grid",
                                             "scaling_wrt_wordlist":"percent",
                                             "save_matched_words":False,
                                             "protos_save_path":"path/to/antz/save/dir",
@@ -701,8 +725,10 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
     num_rings = len(allGlyphData[0]) #check len of a single glyph list. for each index in the list we'll make a ring
     # print("num rings = ",num_rings)
     ring_angles = evenlySpacedAngles(num_rings)
+    glyphLocationFunction = {"grid":generate_centered_grid,
+                             "arc":generate_arc}
     glyphSeparationDistance = 10
-    glyphLocations = generate_centered_grid(len(allGlyphData),glyphSeparationDistance) #generate (x,y) coords for each root glyph
+    glyphLocations = glyphLocationFunction[search_metadata["glyph_pattern"]](len(allGlyphData),glyphSeparationDistance) #generate (x,y) coords for each root glyph
     glyphHeights = generate_glyphHeights(nonScaledAllGlyphData_dict,search_metadata=search_metadata)
 
     colors = chooseBasicColors(allGlyphData)

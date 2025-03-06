@@ -87,6 +87,7 @@ search_metadata = {
                                             "search_string": "sample string",
                                             "num_results_requested": 200,
                                             "scaling_range": (0.2,2.5),
+                                            "glyph_pattern":"grid",
                                             "scaling_type": "minmax",
                                             "scaling_scope":"dataset", #determines if glyphs scaling is relative to max and min of whole dataset, or just 1 glyph.
                                             "scaling_wrt_wordlist":"total", #options ["total","percent","boolean"]
@@ -576,7 +577,14 @@ def upload_wordcount_json():
         print("Wordcount(allglyphdata) JSON load failed.")
         pass
     
-#Old Features Ported Forward
+def change_glyph_pattern_selection(event):
+    global search_metadata
+    global patternDropdown
+
+    search_metadata["glyph_pattern"] = patternDropdown.get()
+    print("glyph pattern changed to:",patternDropdown.get())
+
+#old features ported forwared
 def extraBSWindow():
     global entry_1
     global url_searchlist_textbox
@@ -916,6 +924,7 @@ def main():
     global subjects
     global headlessDropdown
     global wordlistScalingDropdown
+    global patternDropdown
 
     scopes = ['https://www.googleapis.com/auth/gmail.readonly']
 
@@ -1547,6 +1556,12 @@ def main():
     button_open_bs_window = Button(window, text="Other Text \n Options",command=extraBSWindow)
     button_open_bs_window.place(x=720,y=103,height=38,width=70)
 
+    #glyph pattern dropdown
+    canvas.create_text(130,400, anchor="nw", text="Glyph Pattern", fill="#FFFFFF", font=("Inter", 15 * -1))
+    patternDropdown = ttk.Combobox(values = ["grid","arc"]) 
+    patternDropdown.place(x=130, y=420, height=26, width=100)
+    patternDropdown.bind("<<ComboboxSelected>>", change_glyph_pattern_selection)
+    patternDropdown.insert(0,'grid')
 
     window.resizable(False, False)
     window.mainloop()
