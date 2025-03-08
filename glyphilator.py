@@ -13,6 +13,8 @@ from multiprocessing.managers import DictProxy
 from copy import deepcopy
 
 import time
+
+from mapFetcher_mapbox import fetchMapImage,saveMap
 pd.set_option("mode.copy_on_write", True)
 # print("copy on write set to true")
 #import spacy #for natural language processing ie. when I want to include context-aware word searching
@@ -391,12 +393,17 @@ def generateGlyphInput_CSV(filepath_csv, search_metadata = {
                                             "save_matched_words":False,
                                             "protos_save_path":"path/to/antz/save/dir",
                                             "scale_method":"wordlist",
-                                            "csv_headerFlags":[True,True]}
-                                            ): 
+                                            "csv_headerFlags":[True,True,None,None],
+                                            "geo_coords":[[0.1,0.11,0.111],[0.1,0.11,0.111]]
+                                            }): 
     
     
 
-    flag_headerExists,flag_rowNameExists = search_metadata["csv_headerFlags"]
+    flag_headerExists = search_metadata["csv_headerFlags"][0]
+    flag_rowNameExists = search_metadata["csv_headerFlags"][1]
+    latitudeColumnIndex = search_metadata["csv_headerFlags"][2]
+    longitudeColumnIndex = search_metadata["csv_headerFlags"][3]
+
     csv_array = np.genfromtxt(filepath_csv, delimiter=",",missing_values="",filling_values=0,skip_header=False,encoding="utf-8",dtype=str)
     # print("csv_array = \n", csv_array)
     if flag_headerExists == True:
@@ -407,6 +414,14 @@ def generateGlyphInput_CSV(filepath_csv, search_metadata = {
         rowNames = csv_array[:,0]
         # print("rowNames = ",rowNames)
         csv_array = np.delete(csv_array,0,axis=1)
+    if latitudeColumnIndex != None:
+        latitudeColumn = csv_array[:,latitudeColumnIndex]
+        search_metadata["geo_coords"][0] = latitudeColumn.astype(float)
+        csv_array = np.delete(csv_array,latitudeColumnIndex,axis=1)
+    if longitudeColumnIndex != None:
+        longitudeColumn = csv_array[:,longitudeColumnIndex]
+        search_metadata["geo_coords"][1] = longitudeColumn.astype(float)
+        csv_array = np.delete(csv_array,longitudeColumnIndex,axis=1)
     # print("csv_array after r/c deletion = \n ", csv_array)
     csv_array = csv_array.astype(float)
     allGlyphData_dict = {
@@ -483,6 +498,24 @@ def generate_arc(N,step = 10):
         coordsList.append(coord_xy)
     return coordsList
 
+def generate_geospatial(search_metadata):
+    #longitudes: translate in X
+    latitudes = search_metadata["geo_coords"][0]
+    longitudes = search_metadata["geo_coords"][1]
+
+    longitudes = np.array(longitudes)
+    latitudes = np.array(latitudes)
+    coordList = []
+    for column in (latitudes,longitudes):
+        longMin = min(column)
+        longMax = max(column)
+        minX = -30
+        maxX = 30
+        coords = minX + (column - longMin) * (maxX - minX) / (longMax - longMin)
+        coordList.append(coords)
+    
+
+    return coordList
 def generate_glyphHeights(nonScaledAllGlyphData_dict,search_metadata):
     
     allGlyphData = nonScaledAllGlyphData_dict[search_metadata["scaling_wrt_wordlist"]]
@@ -670,7 +703,8 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
                                             "protos_save_path":"path/to/antz/save/dir",
                                             "scale_method":"wordlist",
                                             "csv_headerFlags":[True,True],
-                                            "csv_placementData":{"height_min":0,"height_max":30}
+                                            "csv_placementData":{"height_min":0,"height_max":30},
+                                            "geo_coords":[[0.1,0.11,0.111],[0.1,0.11,0.111]]
                                             }): 
     
     
@@ -680,7 +714,8 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
                              "Octahedron":11}
 
     scaleChoiceDict = {"wordlist":scaleFunc_ForWordlists,
-                       "csv":scaleFunc_forCSV}
+                       "csv":scaleFunc_forCSV,
+                       }
     cwd = os.getcwd()
     
 
@@ -725,10 +760,27 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
     num_rings = len(allGlyphData[0]) #check len of a single glyph list. for each index in the list we'll make a ring
     # print("num rings = ",num_rings)
     ring_angles = evenlySpacedAngles(num_rings)
-    glyphLocationFunction = {"grid":generate_centered_grid,
-                             "arc":generate_arc}
-    glyphSeparationDistance = 10
-    glyphLocations = glyphLocationFunction[search_metadata["glyph_pattern"]](len(allGlyphData),glyphSeparationDistance) #generate (x,y) coords for each root glyph
+    
+    if search_metadata["glyph_pattern"] == "geospatial":
+        
+        mapbox_api_key = r"pk.eyJ1IjoiYWdsaXNrZSIsImEiOiJjbTd4eWkybzEwNDN3MmpwbzE3MW04eTFoIn0.nbkkTpDhyG4WcG5xf-Sr0A"
+        latitudes = search_metadata["geo_coords"][0]
+        longitudes = search_metadata["geo_coords"][1]
+        print("latitudes = ",latitudes,"\n longitudes = ", longitudes)
+        print("len latitudes = ",np.array(latitudes).shape[0],"len longitudes = ", np.array(longitudes).shape[0])
+        url,cornerCoords = fetchMapImage(latitudes,longitudes,0.1,api_key=mapbox_api_key)
+        latitudes = np.append(search_metadata["geo_coords"][0], np.array([cornerCoords[0],cornerCoords[1]])) #appending min and max latitudes to geo coords
+        longitudes = np.append(search_metadata["geo_coords"][1],np.array([cornerCoords[2],cornerCoords[3]])), #appending min and max longitudes to geo coords
+        search_metadata["geo_coords"][0] = latitudes
+        search_metadata["geo_coords"][1] = longitudes
+        glyphLocations = generate_geospatial(search_metadata)
+        print("glyphlocations = ", glyphLocations)
+    else:
+        glyphLocationFunction = {"grid":generate_centered_grid,
+                                "arc":generate_arc}
+        glyphSeparationDistance = 2
+        glyphLocations = glyphLocationFunction[search_metadata["glyph_pattern"]](len(allGlyphData),glyphSeparationDistance) #generate (x,y) coords for each root glyph
+    
     glyphHeights = generate_glyphHeights(nonScaledAllGlyphData_dict,search_metadata=search_metadata)
 
     colors = chooseBasicColors(allGlyphData)
@@ -750,7 +802,12 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
         #update the node_id, parent_id, and record_id (for tag assosciation) for root node
         node_id_counter = node_id_counter + 1
         working_glyph.loc[working_glyph.index[0],['np_node_id','np_data_id','record_id']] = node_id_counter
-        working_glyph.loc[working_glyph.index[0],'parent_id'] = 0 #the parent id for the root is always 0
+        working_glyph.loc[working_glyph.index[0],'parent_id'] = 40 #the parent id for the root is always 0
+
+        #changing scaling of root to mmake everything fit on sub-grid
+        working_glyph.loc[working_glyph.index[0],["scale_x","scale_y","scale_z"]] = None #[i][j] is the i'th glyph in list, and j'th toroid's scale factor
+        working_glyph[["scale_x","scale_y","scale_z"]] = working_glyph[["scale_x","scale_y","scale_z"]].astype('float')
+        working_glyph.loc[working_glyph.index[0],["scale_x","scale_y","scale_z"]] = 0.2
 
         #building root node tags. Display the title of the article, and embed the article url to be interacted with
         working_glyph.loc[working_glyph.index[0],'tag_mode'] = 0 #encoded int describes fontsize, color, etc of tag 65536033
@@ -768,17 +825,18 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
         # print(flag_generating_key_glyph, "iteration = ",i)
         if flag_generating_key_glyph == False:
             #placing the root glyph on the x-y plane
-            working_glyph.loc[working_glyph['parent_id'] == 0,'translate_x'] = None
+            # print("glyphlocations = ",(glyphLocations[i]))
+            working_glyph.loc[working_glyph['parent_id'] == 40,'translate_x'] = None
             working_glyph['translate_x'] = working_glyph['translate_x'].astype(float,copy=False)
-            working_glyph.loc[working_glyph['parent_id'] == 0,'translate_x'] = glyphLocations[i][0] #selecting rows where parent_id ==0 (root glyph element), and the translate_x column, and writing the corresponding value of glyphLocations,
+            working_glyph.loc[working_glyph['parent_id'] == 40,'translate_x'] = glyphLocations[i][0] #selecting rows where parent_id ==0 (root glyph element), and the translate_x column, and writing the corresponding value of glyphLocations,
 
-            working_glyph.loc[working_glyph['parent_id'] == 0,'translate_y'] =None
+            working_glyph.loc[working_glyph['parent_id'] == 40,'translate_y'] =None
             working_glyph['translate_y'] = working_glyph['translate_y'].astype(float,copy=False)
-            working_glyph.loc[working_glyph['parent_id'] == 0,'translate_y'] = glyphLocations[i][1] #so we add the x,y coord of where we want the glyph
+            working_glyph.loc[working_glyph['parent_id'] == 40,'translate_y'] = glyphLocations[i][1] #so we add the x,y coord of where we want the glyph
 
-            working_glyph.loc[working_glyph['parent_id'] == 0,'translate_z'] =None
+            working_glyph.loc[working_glyph['parent_id'] == 40,'translate_z'] =None
             working_glyph['translate_z'] = working_glyph['translate_z'].astype(float,copy=False)
-            working_glyph.loc[working_glyph['parent_id'] == 0,'translate_z'] = glyphHeights[i] #add in glyph heights
+            working_glyph.loc[working_glyph['parent_id'] == 40,'translate_z'] = glyphHeights[i] #add in glyph heights
             #scaling toroid based upon how long the content was.
             # working_glyph.loc[working_glyph.index[1],['ratio']] = articleLengths[i]
 
@@ -802,9 +860,9 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
             
             
             
-            working_glyph.loc[working_glyph['parent_id'] == 0,'translate_x'] = None
+            working_glyph.loc[working_glyph['parent_id'] == 40,'translate_x'] = None
             working_glyph['translate_x'] = working_glyph['translate_x'].astype('float')
-            working_glyph.loc[working_glyph['parent_id'] == 0,'translate_y'] =None
+            working_glyph.loc[working_glyph['parent_id'] == 40,'translate_y'] =None
             working_glyph['translate_y'] = working_glyph['translate_y'].astype('float')
             #calculating furthest top and right glyph
             
@@ -814,12 +872,12 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
                 max_y = max([coord[1] for coord in positive_coordinates])
                 
                 #placing the root glyph on the x-y plane               
-                working_glyph.loc[working_glyph['parent_id'] == 0,'translate_x'] = max_x + 1.5 * glyphSeparationDistance #selecting rows where parent_id ==0 (root glyph element), and the translate_x column, and writing the corresponding value of glyphLocations,
-                working_glyph.loc[working_glyph['parent_id'] == 0,'translate_y'] = max_y + 1.5 * glyphSeparationDistance #so we add the x,y coord of where we want the glyph
+                working_glyph.loc[working_glyph['parent_id'] == 40,'translate_x'] = max_x + 1.5 * glyphSeparationDistance #selecting rows where parent_id ==0 (root glyph element), and the translate_x column, and writing the corresponding value of glyphLocations,
+                working_glyph.loc[working_glyph['parent_id'] == 40,'translate_y'] = max_y + 1.5 * glyphSeparationDistance #so we add the x,y coord of where we want the glyph
 
             except:
-                working_glyph.loc[working_glyph['parent_id'] == 0,'translate_x'] = 21 #selecting rows where parent_id ==0 (root glyph element), and the translate_x column, and writing the corresponding value of glyphLocations,
-                working_glyph.loc[working_glyph['parent_id'] == 0,'translate_y'] = 35
+                working_glyph.loc[working_glyph['parent_id'] == 40,'translate_x'] = 21 #selecting rows where parent_id ==0 (root glyph element), and the translate_x column, and writing the corresponding value of glyphLocations,
+                working_glyph.loc[working_glyph['parent_id'] == 40,'translate_y'] = 35
             
             #adding text to root key glyph node tag.
             working_root_tags.loc[working_root_tags.index[0],'title'] = None

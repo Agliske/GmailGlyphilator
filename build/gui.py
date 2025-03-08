@@ -40,6 +40,7 @@ from pubmedFetcher import pubmedResults
 from paragraphParser import articleParse,txtFileParse
 # from asyncPubmedFetcher import pubmedResultsAsync
 import gmailFetcher
+from mapFetcher_mapbox import fetchMapImage,saveMap
 
 
 
@@ -96,9 +97,10 @@ search_metadata = {
                                             "uploaded_articledata_path":"None",
                                             "scale_method":"wordlist", #options ["wordlist","csv"] depending on what files are being processed
                                             "csv_path":"path/to/csv.csv",
-                                            "csv_headerFlags":[True,True],#csv_headerflags determines if the [first row, first column] of csv dataset are identifiers or tags as opposed to data
+                                            "csv_headerFlags":[True,True,None,None],#csv_headerflags determines if the [first row, first column] of csv dataset are identifiers or tags as opposed to data
                                             "csv_heightcolumn":-1,#-1 signifies no column, all glyphs on y plane
-                                            "csv_placementData":{"height_min":0,"height_max":30}  
+                                            "csv_placementData":{"height_min":0,"height_max":30},
+                                            "geo_coords":[[0.1,0.11,0.111],[0.1,0.11,0.111]]  #list of list of latitudes and longitudes
                                             } 
 ############################################################################################################
 # Definitions
@@ -307,6 +309,10 @@ def create_viz():
     if search_metadata["uploaded_articledata_path"] != "wordcounts_thru_upload": #check to see if any data was uploaded by
         search_metadata["subject_string"] = newsAlertDropdown.get()
         search_metadata["wordlist_paths"] = list_txt_filepaths
+    
+    latitudeColumnIndex = search_metadata["csv_headerFlags"][2]
+    longitudeColumnIndex = search_metadata["csv_headerFlags"][3]
+    
     # search_metadata["custom_list_file_paths"] = list_custom_files_paths
     # if custom_url_searchlist == None: search_metadata['search_string'] = [entry_1.get()] #THIS INFO WAS ASSIGNED WHEN SEARCH CONFIRM BUTTON CLIckEd AND when URL SEARCHLIST UPLOADED
     # if custom_url_searchlist != None: search_metadata['search_string'] = ["Used URL Searchlist", url_searchlist_textbox.get()]
@@ -315,9 +321,7 @@ def create_viz():
     search_metadata["scaling_range"] = (float(max_scale.get())/(6),float(max_scale.get())) #min scale is 1/6 the max scale
     search_metadata["csv_placementData"]["height_min"] = float(min_height_entry.get())
     search_metadata["csv_placementData"]["height_max"] = float(max_height_entry.get())
-    # print(search_metadata["scaling_range"])
-    
-    # print("allglyphdatadict = ", nonscaled_allGlyphData_dict)
+
 
     # print('generating antz and tag file. \n Initializing parallel processing')
     antzfile,tagfile = constructBasicGlyphs(articleData=final_articleData,nonScaledAllGlyphData_dict=nonscaled_allGlyphData_dict,glyphDataWordcounts=glyphDataCounts, wordlists=final_wordlists,search_metadata=search_metadata)
@@ -594,6 +598,8 @@ def extraBSWindow():
     global dropdown_heightcolumnSelector
     global min_height_entry
     global max_height_entry
+    global dropdown_latitudeSelector
+    global dropdown_longitudeSelector
 
     bsWindow = Toplevel(window)
     bsWindow.title("Custom List & Pubmed")
@@ -662,7 +668,7 @@ def extraBSWindow():
     bsCanvas.create_text(30,355,text="Height Placement Column, Height(max,min)",anchor="nw",fill="#FFFFFF",font=("Inter", 12 * -1))
     dropdown_heightcolumnSelector = ttk.Combobox(bsWindow,values=["None"])
     dropdown_heightcolumnSelector.place(x=30, y=370, width=150, height=26)
-    dropdown_heightcolumnSelector.bind("<<ComboboxSelected>>", dropdown_heightcolumnSelector_clicked)
+    dropdown_heightcolumnSelector.bind("<<ComboboxSelected>>", dropdown_Selector_forCSV_clicked)
     dropdown_heightcolumnSelector.insert(0,"None")
 
     min_height_entry = Entry(bsWindow)
@@ -672,6 +678,18 @@ def extraBSWindow():
     max_height_entry = Entry(bsWindow)
     max_height_entry.place(x=215, y=370, width=30, height=26)
     max_height_entry.insert(0,"30")
+
+    #geospatial stuff
+    bsCanvas.create_text(30,400,text="Latitude Column |                                  Longitude Column",anchor="nw",fill="#FFFFFF",font=("Inter", 12 * -1))
+    dropdown_latitudeSelector = ttk.Combobox(bsWindow, values=["None"])
+    dropdown_latitudeSelector.place(x=30, y=420, width=150, height=26)
+    dropdown_latitudeSelector.bind("<<ComboboxSelected>>", dropdown_Selector_forCSV_clicked)
+    dropdown_latitudeSelector.insert(0,"None")
+
+    dropdown_longitudeSelector = ttk.Combobox(bsWindow, values=["None"])
+    dropdown_longitudeSelector.place(x=190, y=420, width=150, height=26)
+    dropdown_longitudeSelector.bind("<<ComboboxSelected>>", dropdown_Selector_forCSV_clicked)
+    dropdown_longitudeSelector.insert(0,"None")
 
 def upload_url_list():
     global custom_url_searchlist
@@ -826,6 +844,8 @@ def upload_csv():
     global max_scale
     global search_metadata
     global dropdown_heightcolumnSelector
+    global dropdown_latitudeSelector
+    global dropdown_longitudeSelector
 
     csv_filepath = filedialog.askopenfilename()
     search_metadata["csv_path"] = csv_filepath
@@ -836,7 +856,8 @@ def upload_csv():
     #read first row of csv
     csv_array = genfromtxt(csv_filepath, delimiter=",",missing_values="",filling_values=0,skip_header=False,encoding="utf-8",dtype=str)
     csv_heightcolumn_vals = ["None"]
-    
+    csv_latitudeColumn_vals = ["None"]
+    csv_longitudeColumn_vals = ["None"]
     if search_metadata["csv_headerFlags"][0] == True:
         if search_metadata["csv_headerFlags"][1] == True: #if the first column is not data, we dont want to include it in columnNames
             columnNames = csv_array[0,1:]
@@ -847,6 +868,8 @@ def upload_csv():
         x = len(columnNames)
         for string in columnNames:
             csv_heightcolumn_vals.append(string)
+            csv_latitudeColumn_vals.append(string)
+            csv_longitudeColumn_vals.append(string)
             # print("appending string", string)
 
     if search_metadata["csv_headerFlags"][0] == False:
@@ -860,10 +883,14 @@ def upload_csv():
         for i in range(0,numColumns):
             string = "Column_" + str(i+1)
             csv_heightcolumn_vals.append(string)
+            csv_latitudeColumn_vals.append(string)
+            csv_longitudeColumn_vals.append(string)
     
     # print(search_metadata["csv_heightcolumn_vals"])
     dropdown_heightcolumnSelector["values"] = csv_heightcolumn_vals
-
+    dropdown_latitudeSelector["values"] = csv_latitudeColumn_vals
+    dropdown_longitudeSelector["values"] = csv_longitudeColumn_vals
+    
     
     scalingDict = {"Sphere":(19*x**2)/(x**3),
                    "Cube":(19*x**2)/(x**3),
@@ -897,16 +924,38 @@ def checkbox_clicked():
     search_metadata["csv_headerFlags"] = [tkRowHeaderVar.get(),tkColHeaderVar.get()]
     print(search_metadata["csv_headerFlags"])
 
-def dropdown_heightcolumnSelector_clicked(event):
+def dropdown_Selector_forCSV_clicked(event):
     global dropdown_heightcolumnSelector
+    global dropdown_latitudeSelector
+    global dropdown_longitudeSelector
     global search_metadata
+    global patternDropdown
+
     string = dropdown_heightcolumnSelector.get()
-    # print("col selected = ", string)
-    # print("cboxvalues=",dropdown_heightcolumnSelector["values"])
     values = dropdown_heightcolumnSelector["values"]
     column = list(values).index(string) - 1
-    # print("selected column = ",column)
     search_metadata["csv_heightcolumn"] = column
+
+    string = dropdown_latitudeSelector.get()
+    if string != "None":
+        
+        values = dropdown_latitudeSelector["values"]
+        column = list(values).index(string) - 1
+        search_metadata["csv_headerFlags"][2] = column
+        search_metadata["glyph_pattern"] = "geospatial"
+        patternDropdown.delete(0,END)
+        patternDropdown.insert(0,"geospatial")
+    
+    string = dropdown_longitudeSelector.get()
+    if string != "None":
+        
+        values = dropdown_longitudeSelector["values"]
+        column = list(values).index(string) - 1
+        search_metadata["csv_headerFlags"][3] = column
+        search_metadata["glyph_pattern"] = "geospatial"
+        patternDropdown.delete(0,END)
+        patternDropdown.insert(0,"geospatial")
+
 
 #main
 def main():
