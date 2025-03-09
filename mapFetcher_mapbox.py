@@ -1,6 +1,7 @@
 import requests
 import numpy as np
 import os
+from geopy.distance import geodesic
 
 #steps
 # 1.calculate max and min of my lat and long
@@ -38,30 +39,61 @@ def fetchMapImage(latitudes,longitudes,buffer,api_key):
     maxLat =  np.max(latitudes)
     minLong = np.min(longitudes)
     maxLong = np.max(longitudes)
-    print("minlat,maxlat,minlong,maxlong = ", (minLat,maxLat,minLong,maxLong))
-    latdistance = maxLat - minLat
-    longdistance = maxLong - minLong
+    print("minlat,maxlat,minlong,maxlong = ", (minLong,maxLong,minLat,maxLat))
+    latdistance = geodesic((minLat, minLong), (maxLat, minLong)).km
+
+    longdistance = geodesic((minLat, minLong), (minLat, maxLong)).km
+
     print("(latdistance,longdistance) = ", (latdistance,longdistance))
+
+    centerLat = (minLat + maxLat) / 2
+    centerLong = (minLong + maxLong) / 2
+
     if latdistance > longdistance:
-        midpoint = (minLong - maxLong)/2 #find midpoint on shorter side of bounding rectangle
-        minLong = midpoint - (latdistance/2)
-        maxLong = midpoint + (latdistance/2)
+        # midpoint = (minLong + maxLong)/2 #find midpoint on shorter side of bounding rectangle
+        # longExpansion = (latdistance - longdistance) / 2
+        # print("longExpansion = ",longExpansion)
+        # minLong = midpoint - (latdistance/2)
+        # maxLong = midpoint + (latdistance/2)
+        minLong = geodesic(kilometers=latdistance/2).destination((centerLat, centerLong), 270).longitude
+        maxLong = geodesic(kilometers=latdistance/2).destination((centerLat, centerLong), 90).longitude
+  
     if longdistance > latdistance:
-        midpoint = (minLat - maxLat)/2
-        minLat = midpoint - (longdistance/2)
-        maxLat = midpoint + (longdistance/2)
-    print("midpoint =", midpoint)
-    print("new minlat,maxlat,minlong,maxlong = ", (minLat,maxLat,minLong,maxLong))
-    print("new latdistance,longdistance = ",(maxLat - minLat,maxLong - minLong))
+        # midpoint = (minLat + maxLat)/2
+        # latExpansion = (longdistance - latdistance) / 2
+        # print("latExapnsion = ", latExpansion)
+        minLat = geodesic(kilometers=longdistance/2).destination((centerLat, centerLong), 180).latitude
+        maxLat = geodesic(kilometers=longdistance/2).destination((centerLat, centerLong), 0).latitude
+    
+    # max_distance = max(latdistance, longdistance)
 
-    latPadAmt = latdistance * buffer
-    longPadAmt = longdistance * buffer
-    aspectRatio = longdistance/latdistance
+    # latExpansion = (max_distance - latdistance) / 2
+    # longExpansion = (max_distance - longdistance) / 2
 
-    minLat = minLat - latPadAmt
-    maxLat = maxLat + latPadAmt
-    minLong = minLong - longPadAmt
-    maxLong = maxLong + longPadAmt
+    # minLat = geodesic(kilometers=latExpansion).destination((centerLat, centerLong), 180).latitude
+    # maxLat = geodesic(kilometers=latExpansion).destination((centerLat, centerLong), 0).latitude
+    # minLong = geodesic(kilometers=longExpansion).destination((centerLat, centerLong), 270).longitude
+    # maxLong = geodesic(kilometers=longExpansion).destination((centerLat, centerLong), 90).longitude
+
+   # minLat = midpoint - (longdistance/2)
+        # maxLat = midpoint + (longdistance/2)
+    # print("midpoint =", midpoint)
+    print("new minlat,maxlat,minlong,maxlong = ", (minLong,maxLong,minLat,maxLat))
+    print("new longdistance,latdistance = ",(geodesic((minLat, (minLong + maxLong) / 2), (maxLat, (minLong + maxLong) / 2)).km,geodesic(((minLat + maxLat) / 2, minLong), ((minLat + maxLat) / 2, maxLong)).km))
+
+    # latPadAmt = latdistance * buffer
+    # longPadAmt = longdistance * buffer
+    # aspectRatio = longdistance/latdistance
+
+    # minLat = minLat - latPadAmt
+    # maxLat = maxLat + latPadAmt
+    # minLong = minLong - longPadAmt
+    # maxLong = maxLong + longPadAmt
+    buffer_km = max(latdistance, longdistance) * buffer
+    minLat = geodesic(kilometers=buffer_km).destination((minLat, centerLong), 180).latitude
+    maxLat = geodesic(kilometers=buffer_km).destination((maxLat, centerLong), 0).latitude
+    minLong = geodesic(kilometers=buffer_km).destination((centerLat, minLong), 270).longitude
+    maxLong = geodesic(kilometers=buffer_km).destination((centerLat, maxLong), 90).longitude
 
     # if latdistance >= longdistance:
     #     ratio = longdistance/latdistance
@@ -77,11 +109,12 @@ def fetchMapImage(latitudes,longitudes,buffer,api_key):
     for i in range(1,latitudes.shape[0]):
         markerString = markerString + ",pin-s+000(" + str(float(latitudes[i])) + "," + str(float(longitudes[i])) + ")"
 
-    
+    cornerstring = "pin-s+000(" + str(float(minLong)) +","+ str(float(minLat)) + ")" + ",pin-s+000(" + str(float(minLong)) +","+ str(float(maxLat)) + ")" ",pin-s+000(" + str(float(maxLong)) +","+ str(float(minLat)) + ")"",pin-s+000(" + str(float(maxLong)) +","+ str(float(maxLat)) + ")"
+    cornerstring = cornerstring + "/"
     markerString = markerString + "/"
-    request_url = r"https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/" + markerString + str([float(minLat),float(minLong),float(maxLat),float(maxLong)]) + "/" + str(int(requestedResolution[0])) + "x" + str(int(requestedResolution[1])) + "@2x?access_token=" + str(api_key)
+    request_url = r"https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/" + cornerstring + str([float(minLong),float(minLat),float(maxLong),float(maxLat)]) + "/" + str(int(requestedResolution[0])) + "x" + str(int(requestedResolution[1])) + "@2x?access_token=" + str(api_key)
     
-    return request_url,[minLat,maxLat,minLong,maxLong]
+    return request_url,[minLong,maxLong,minLat,maxLat]
 
 def saveMap(request_url):
     cwd = os.getcwd()

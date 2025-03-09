@@ -412,17 +412,29 @@ def generateGlyphInput_CSV(filepath_csv, search_metadata = {
         csv_array = np.delete(csv_array,0,axis=0) #delete header row
     if flag_rowNameExists == True:
         rowNames = csv_array[:,0]
-        # print("rowNames = ",rowNames)
         csv_array = np.delete(csv_array,0,axis=1)
+        # print("rowNames = ",rowNames)
+        
+    # print("latitudeColumnIndex = ",latitudeColumnIndex,"\nLongitudecolumnindex = ", longitudeColumnIndex)
     if latitudeColumnIndex != None:
         latitudeColumn = csv_array[:,latitudeColumnIndex]
         search_metadata["geo_coords"][0] = latitudeColumn.astype(float)
-        csv_array = np.delete(csv_array,latitudeColumnIndex,axis=1)
+        
     if longitudeColumnIndex != None:
         longitudeColumn = csv_array[:,longitudeColumnIndex]
         search_metadata["geo_coords"][1] = longitudeColumn.astype(float)
+    # print("latitudes during collect csvData = ",latitudeColumn,"\nlongitudes during collectcsvdata = ",longitudeColumn)
+
+    #do deletions after data assignments
+    # if flag_rowNameExists == True:csv_array = np.delete(csv_array,0,axis=1)
+    if latitudeColumnIndex != None:
+        csv_array = np.delete(csv_array,latitudeColumnIndex,axis=1)
+        columnNames = np.delete(columnNames,latitudeColumnIndex)
+    if latitudeColumnIndex != None and longitudeColumnIndex != None:
+        if latitudeColumnIndex < longitudeColumnIndex: longitudeColumnIndex = longitudeColumnIndex - 1 #index shifting after column deletion
+    if longitudeColumnIndex != None:
         csv_array = np.delete(csv_array,longitudeColumnIndex,axis=1)
-    # print("csv_array after r/c deletion = \n ", csv_array)
+        columnNames = np.delete(columnNames,longitudeColumnIndex)
     csv_array = csv_array.astype(float)
     allGlyphData_dict = {
         "total": None,
@@ -502,19 +514,24 @@ def generate_geospatial(search_metadata):
     #longitudes: translate in X
     latitudes = search_metadata["geo_coords"][0]
     longitudes = search_metadata["geo_coords"][1]
+    print("latitudes in geospacial = ", latitudes,"\n longitudes in geospatial = ", longitudes)
 
     longitudes = np.array(longitudes)
     latitudes = np.array(latitudes)
+    
     coordList = []
-    for column in (latitudes,longitudes):
+    for column in [latitudes,longitudes]:
         longMin = min(column)
+        
         longMax = max(column)
+        print("min lat/long =",longMin,"max lat/long= ",longMax)
         minX = -30
         maxX = 30
         coords = minX + (column - longMin) * (maxX - minX) / (longMax - longMin)
+        # print("coords in generate geospacial loop = ",coords)
         coordList.append(coords)
     
-
+    coordList = list(zip(coordList[0],coordList[1]))
     return coordList
 def generate_glyphHeights(nonScaledAllGlyphData_dict,search_metadata):
     
@@ -734,29 +751,6 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
     # # print("glyphilator nonscaledallglyphdata = ", nonScaledAllGlyphData)
     glyphDataCounts = nonScaledAllGlyphData
 
-    # if search_metadata["scaling_type"] == "minmax":
-        
-    #     min_target = search_metadata["scaling_range"][0]
-    #     max_target = search_metadata["scaling_range"][1]
-        
-    #     data_array = array(nonScaledAllGlyphData)
-    #     print("scaling_scope is:",search_metadata["scaling_scope"])
-    #     if search_metadata["scaling_scope"] == "dataset":
-    #         min_val = min(data_array)
-    #         max_val = max(data_array)
-    #         allGlyphData = min_target + (data_array - min_val) * (max_target - min_target) / (max_val - min_val)
-    #         allGlyphData.tolist()
-        
-    #     if search_metadata["scaling_scope"] == "glyph":
-    #         allGlyphData = []
-    #         for i in range(0,len(data_array)):
-    #             min_val = min(data_array[i])
-    #             max_val = max(data_array[i])
-    #             scaledOneGlyphData = min_target + (data_array[i] - min_val) * (max_target - min_target) / (max_val - min_val)
-    #             allGlyphData.append(scaledOneGlyphData)
-    
-   
-
     num_rings = len(allGlyphData[0]) #check len of a single glyph list. for each index in the list we'll make a ring
     # print("num rings = ",num_rings)
     ring_angles = evenlySpacedAngles(num_rings)
@@ -766,15 +760,25 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
         mapbox_api_key = r"pk.eyJ1IjoiYWdsaXNrZSIsImEiOiJjbTd4eWkybzEwNDN3MmpwbzE3MW04eTFoIn0.nbkkTpDhyG4WcG5xf-Sr0A"
         latitudes = search_metadata["geo_coords"][0]
         longitudes = search_metadata["geo_coords"][1]
-        print("latitudes = ",latitudes,"\n longitudes = ", longitudes)
-        print("len latitudes = ",np.array(latitudes).shape[0],"len longitudes = ", np.array(longitudes).shape[0])
+        # print("latitudes = ",latitudes,"\n longitudes = ", longitudes)
+        # print("len latitudes = ",np.array(latitudes).shape[0],"len longitudes = ", np.array(longitudes).shape[0])
         url,cornerCoords = fetchMapImage(latitudes,longitudes,0.1,api_key=mapbox_api_key)
-        latitudes = np.append(search_metadata["geo_coords"][0], np.array([cornerCoords[0],cornerCoords[1]])) #appending min and max latitudes to geo coords
-        longitudes = np.append(search_metadata["geo_coords"][1],np.array([cornerCoords[2],cornerCoords[3]])), #appending min and max longitudes to geo coords
+        print("mapbox request url = ",url)
+        texture_id = saveMap(url)
+        antzfile.loc[antzfile['np_node_id'] == 40,'np_texture_id'] = texture_id
+        # print("latitudes = ",latitudes,"\n longitudes = ", longitudes)
+        # print("latitudes type = ",latitudes,"\n longitudes = ", longitudes)
+
+        latitudes = np.append(search_metadata["geo_coords"][0],np.array([cornerCoords[2],cornerCoords[3]])) #appending min and max latitudes to geo coords
+        longitudes = np.append(search_metadata["geo_coords"][1],np.array([cornerCoords[0],cornerCoords[1]])) #appending min and max longitudes to geo coords
         search_metadata["geo_coords"][0] = latitudes
         search_metadata["geo_coords"][1] = longitudes
+        # print("latitudes before geospatial = ",latitudes,"\n longitudes before geospatial = ", longitudes)
         glyphLocations = generate_geospatial(search_metadata)
-        print("glyphlocations = ", glyphLocations)
+        
+        
+        # print("existing tex id = ",existing_texture_id)
+        # print("glyphlocations = ", glyphLocations)
     else:
         glyphLocationFunction = {"grid":generate_centered_grid,
                                 "arc":generate_arc}
@@ -828,11 +832,11 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
             # print("glyphlocations = ",(glyphLocations[i]))
             working_glyph.loc[working_glyph['parent_id'] == 40,'translate_x'] = None
             working_glyph['translate_x'] = working_glyph['translate_x'].astype(float,copy=False)
-            working_glyph.loc[working_glyph['parent_id'] == 40,'translate_x'] = glyphLocations[i][0] #selecting rows where parent_id ==0 (root glyph element), and the translate_x column, and writing the corresponding value of glyphLocations,
+            working_glyph.loc[working_glyph['parent_id'] == 40,'translate_x'] = glyphLocations[i][1] #selecting rows where parent_id ==0 (root glyph element), and the translate_x column, and writing the corresponding value of glyphLocations,
 
             working_glyph.loc[working_glyph['parent_id'] == 40,'translate_y'] =None
             working_glyph['translate_y'] = working_glyph['translate_y'].astype(float,copy=False)
-            working_glyph.loc[working_glyph['parent_id'] == 40,'translate_y'] = glyphLocations[i][1] #so we add the x,y coord of where we want the glyph
+            working_glyph.loc[working_glyph['parent_id'] == 40,'translate_y'] = glyphLocations[i][0] #so we add the x,y coord of where we want the glyph
 
             working_glyph.loc[working_glyph['parent_id'] == 40,'translate_z'] =None
             working_glyph['translate_z'] = working_glyph['translate_z'].astype(float,copy=False)

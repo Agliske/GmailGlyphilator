@@ -30,8 +30,46 @@ import glyphilator
 # print("unscaled data = \n", unScaled_allglyphdata)
 # print("scaled data = \n",scaled_allglyphdata)
 from glyphilator import generate_arc
+import pandas as pd
+import numpy as np
+import os
+from mapFetcher_mapbox import fetchMapImage
+cwd = os.getcwd()
 
-coordslist = generate_arc(15,10)
-print(coordslist)
+longitudes = np.array([-0.1278,
+-2.2426,
+-1.8904,
+-1.5491,
+-2.9916,
+-1.4701,
+-2.5879,
+-1.6174,
+-1.1581,
+-1.4044])
 
+latitudes = np.array([51.5074,
+53.4808,
+52.4862,
+53.8008,
+53.4084,
+53.3811,
+51.4545,
+54.9783,
+52.9548,
+50.9097])
+
+
+
+mapbox_api_key = r"pk.eyJ1IjoiYWdsaXNrZSIsImEiOiJjbTd4eWkybzEwNDN3MmpwbzE3MW04eTFoIn0.nbkkTpDhyG4WcG5xf-Sr0A"
+url,cornerCoords = fetchMapImage(latitudes,longitudes,0.1,api_key=mapbox_api_key)
+
+print(url)
+print(cornerCoords)
+
+# sampleurl = "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/pin-s+000(-0.1278,51.5074),pin-s+000(-2.2426,53.4808),pin-s+000(-1.8904,52.4862),pin-s+000(-1.5491,53.8008),pin-s+000(-2.9916,53.4084),pin-s+000(-1.4701,53.3811),pin-s+000(-2.5879,51.4545),pin-s+000(-1.6174,54.9783),pin-s+000(-1.1581,52.9548),pin-s+000(-1.4044,50.9097),pin-s+000(-3.752579999999998,50.50284),pin-s+000(-3.752579999999998,55.38516),pin-s+000(0.8887799999999983,50.50284),pin-s+000(0.8887799999999983,55.38516)/[-3.752579999999998, 50.50284, 0.8887799999999983, 55.38516]/1280x1280@2x?access_token=pk.eyJ1IjoiYWdsaXNrZSIsImEiOiJjbTd4eWkybzEwNDN3MmpwbzE3MW04eTFoIn0.nbkkTpDhyG4WcG5xf-Sr0A"
+# core_glyph_csv_path = os.path.join(cwd,"resources","glyph_header.csv")
+# antzfile = pd.read_csv(core_glyph_csv_path)
+# print(antzfile.loc[:,'np_texture_id'])
+# antzfile.loc[antzfile['np_node_id'] == 40,'np_texture_id'] = 999
+# print(antzfile.loc[:,'np_texture_id'])
 # plot = sca
