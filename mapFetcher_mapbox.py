@@ -107,12 +107,12 @@ def fetchMapImage(latitudes,longitudes,buffer,api_key):
     
     markerString = "pin-s+000(" + str(float(latitudes[0])) +","+ str(float(longitudes[0])) + ")"
     for i in range(1,latitudes.shape[0]):
-        markerString = markerString + ",pin-s+000(" + str(float(latitudes[i])) + "," + str(float(longitudes[i])) + ")"
+        markerString = markerString + ",pin-s+000(" + str(float(longitudes[i])) + "," + str(float(latitudes[i])) + ")"
 
     cornerstring = "pin-s+000(" + str(float(minLong)) +","+ str(float(minLat)) + ")" + ",pin-s+000(" + str(float(minLong)) +","+ str(float(maxLat)) + ")" ",pin-s+000(" + str(float(maxLong)) +","+ str(float(minLat)) + ")"",pin-s+000(" + str(float(maxLong)) +","+ str(float(maxLat)) + ")"
     cornerstring = cornerstring + "/"
     markerString = markerString + "/"
-    request_url = r"https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/" + cornerstring + str([float(minLong),float(minLat),float(maxLong),float(maxLat)]) + "/" + str(int(requestedResolution[0])) + "x" + str(int(requestedResolution[1])) + "@2x?access_token=" + str(api_key)
+    request_url = r"https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/" + str([float(minLong),float(minLat),float(maxLong),float(maxLat)]) + "/" + str(int(requestedResolution[0])) + "x" + str(int(requestedResolution[1])) + "@2x?access_token=" + str(api_key)
     
     return request_url,[minLong,maxLong,minLat,maxLat]
 

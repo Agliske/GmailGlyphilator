@@ -512,15 +512,19 @@ def generate_arc(N,step = 10):
 
 def generate_geospatial(search_metadata):
     #longitudes: translate in X
-    latitudes = search_metadata["geo_coords"][0]
-    longitudes = search_metadata["geo_coords"][1]
+    latitudes = np.radians(search_metadata["geo_coords"][0])
+    longitudes = np.radians(search_metadata["geo_coords"][1])
     print("latitudes in geospacial = ", latitudes,"\n longitudes in geospatial = ", longitudes)
-
+    R = 6378137
     longitudes = np.array(longitudes)
     latitudes = np.array(latitudes)
     
+    #web mercator projection
+    X = R * longitudes
+    Y = R * np.log(np.tan(np.pi / 4 + latitudes / 2))
+
     coordList = []
-    for column in [latitudes,longitudes]:
+    for column in [X,Y]:
         longMin = min(column)
         
         longMax = max(column)
@@ -832,11 +836,11 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
             # print("glyphlocations = ",(glyphLocations[i]))
             working_glyph.loc[working_glyph['parent_id'] == 40,'translate_x'] = None
             working_glyph['translate_x'] = working_glyph['translate_x'].astype(float,copy=False)
-            working_glyph.loc[working_glyph['parent_id'] == 40,'translate_x'] = glyphLocations[i][1] #selecting rows where parent_id ==0 (root glyph element), and the translate_x column, and writing the corresponding value of glyphLocations,
+            working_glyph.loc[working_glyph['parent_id'] == 40,'translate_x'] = glyphLocations[i][0] #selecting rows where parent_id ==0 (root glyph element), and the translate_x column, and writing the corresponding value of glyphLocations,
 
             working_glyph.loc[working_glyph['parent_id'] == 40,'translate_y'] =None
             working_glyph['translate_y'] = working_glyph['translate_y'].astype(float,copy=False)
-            working_glyph.loc[working_glyph['parent_id'] == 40,'translate_y'] = glyphLocations[i][0] #so we add the x,y coord of where we want the glyph
+            working_glyph.loc[working_glyph['parent_id'] == 40,'translate_y'] = glyphLocations[i][1] #so we add the x,y coord of where we want the glyph
 
             working_glyph.loc[working_glyph['parent_id'] == 40,'translate_z'] =None
             working_glyph['translate_z'] = working_glyph['translate_z'].astype(float,copy=False)
