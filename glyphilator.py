@@ -404,8 +404,14 @@ def generateGlyphInput_CSV(filepath_csv, search_metadata = {
     latitudeColumnIndex = search_metadata["csv_headerFlags"][2]
     longitudeColumnIndex = search_metadata["csv_headerFlags"][3]
 
-    csv_array = np.genfromtxt(filepath_csv, delimiter=",",missing_values="",filling_values=0,skip_header=False,encoding="utf-8",dtype=str)
-    # print("csv_array = \n", csv_array)
+    # csv_array = np.genfromtxt(filepath_csv, delimiter=",",missing_values="",filling_values=0,skip_header=False,encoding="utf-8",dtype=str)
+    
+    # Load CSV as a NumPy array, treating missing values as NaN
+    csv_array = np.genfromtxt(filepath_csv, delimiter=",", missing_values="", filling_values=np.nan, 
+                            skip_header=False, encoding="utf-8", dtype=str)
+    
+    csv_array[csv_array == ''] = np.nan
+
     if flag_headerExists == True:
         columnNames = csv_array[0,1:]
         # print("column names =", columnNames)
@@ -414,14 +420,38 @@ def generateGlyphInput_CSV(filepath_csv, search_metadata = {
         rowNames = csv_array[:,0]
         csv_array = np.delete(csv_array,0,axis=1)
         # print("rowNames = ",rowNames)
-        
-    # print("latitudeColumnIndex = ",latitudeColumnIndex,"\nLongitudecolumnindex = ", longitudeColumnIndex)
+    # Convert the entire array to object dtype to allow modifications
+    csv_array = csv_array.astype(object)
+
+    # Convert Latitude and Longitude to float, setting non-convertible values to NaN
+    csv_array[:, latitudeColumnIndex] = np.where(csv_array[:, latitudeColumnIndex] == '', np.nan, csv_array[:, latitudeColumnIndex])
+    csv_array[:, longitudeColumnIndex] = np.where(csv_array[:, longitudeColumnIndex] == '', np.nan, csv_array[:, longitudeColumnIndex])
+
+    # Convert Latitude and Longitude columns to float type
+    csv_array[:, latitudeColumnIndex] = csv_array[:, latitudeColumnIndex].astype(float)
+    csv_array[:, longitudeColumnIndex] = csv_array[:, longitudeColumnIndex].astype(float)
+
+    # Create a mask to remove rows with NaN in Latitude or Longitude
+    # valid_rows = ~np.isnan(csv_array[:, latitudeColumnIndex].astype(float)) & ~np.isnan(csv_array[:, longitudeColumnIndex].astype(float))
+    valid_rows = ~np.any(np.isnan(csv_array[:, :].astype(float)), axis=1)  
+
+
+    # Apply the mask to filter valid rows
+    csv_array = csv_array[valid_rows]
+
+    # Filtering rows that have latitude <85 degrees. they wont be accpted by mapbox api
+    csv_array[:, latitudeColumnIndex] = csv_array[:, latitudeColumnIndex].astype(float)
+    valid_rows = csv_array[:, latitudeColumnIndex] <= 85
+    csv_array = csv_array[valid_rows]
+
     if latitudeColumnIndex != None:
         latitudeColumn = csv_array[:,latitudeColumnIndex]
+        # print("latitudeColumn = ", latitudeColumn)
         search_metadata["geo_coords"][0] = latitudeColumn.astype(float)
         
     if longitudeColumnIndex != None:
         longitudeColumn = csv_array[:,longitudeColumnIndex]
+        # print("longitudeColumn = ", longitudeColumn)
         search_metadata["geo_coords"][1] = longitudeColumn.astype(float)
     # print("latitudes during collect csvData = ",latitudeColumn,"\nlongitudes during collectcsvdata = ",longitudeColumn)
 
@@ -432,9 +462,11 @@ def generateGlyphInput_CSV(filepath_csv, search_metadata = {
         columnNames = np.delete(columnNames,latitudeColumnIndex)
     if latitudeColumnIndex != None and longitudeColumnIndex != None:
         if latitudeColumnIndex < longitudeColumnIndex: longitudeColumnIndex = longitudeColumnIndex - 1 #index shifting after column deletion
+        if latitudeColumnIndex < search_metadata["csv_heightcolumn"]: search_metadata["csv_heightcolumn"] = search_metadata["csv_heightcolumn"] - 1
     if longitudeColumnIndex != None:
         csv_array = np.delete(csv_array,longitudeColumnIndex,axis=1)
         columnNames = np.delete(columnNames,longitudeColumnIndex)
+        if longitudeColumnIndex < search_metadata["csv_heightcolumn"]: search_metadata["csv_heightcolumn"] = search_metadata["csv_heightcolumn"] - 1 #more index shifting
     csv_array = csv_array.astype(float)
     allGlyphData_dict = {
         "total": None,
@@ -514,7 +546,7 @@ def generate_geospatial(search_metadata):
     #longitudes: translate in X
     latitudes = np.radians(search_metadata["geo_coords"][0])
     longitudes = np.radians(search_metadata["geo_coords"][1])
-    print("latitudes in geospacial = ", latitudes,"\n longitudes in geospatial = ", longitudes)
+    # print("latitudes in geospacial = ", latitudes,"\n longitudes in geospatial = ", longitudes)
     R = 6378137
     longitudes = np.array(longitudes)
     latitudes = np.array(latitudes)
@@ -528,7 +560,7 @@ def generate_geospatial(search_metadata):
         longMin = min(column)
         
         longMax = max(column)
-        print("min lat/long =",longMin,"max lat/long= ",longMax)
+        # print("min lat/long =",longMin,"max lat/long= ",longMax)
         minX = -30
         maxX = 30
         coords = minX + (column - longMin) * (maxX - minX) / (longMax - longMin)
@@ -761,13 +793,13 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
     
     if search_metadata["glyph_pattern"] == "geospatial":
         
-        mapbox_api_key = r"pk.eyJ1IjoiYWdsaXNrZSIsImEiOiJjbTd4eWkybzEwNDN3MmpwbzE3MW04eTFoIn0.nbkkTpDhyG4WcG5xf-Sr0A"
+        mapbox_api_key = search_metadata["api_keys"]["mapbox"]
         latitudes = search_metadata["geo_coords"][0]
         longitudes = search_metadata["geo_coords"][1]
         # print("latitudes = ",latitudes,"\n longitudes = ", longitudes)
         # print("len latitudes = ",np.array(latitudes).shape[0],"len longitudes = ", np.array(longitudes).shape[0])
         url,cornerCoords = fetchMapImage(latitudes,longitudes,0.1,api_key=mapbox_api_key)
-        print("mapbox request url = ",url)
+        # print("mapbox request url = ",url)
         texture_id = saveMap(url)
         antzfile.loc[antzfile['np_node_id'] == 40,'np_texture_id'] = texture_id
         # print("latitudes = ",latitudes,"\n longitudes = ", longitudes)
@@ -815,7 +847,7 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
         #changing scaling of root to mmake everything fit on sub-grid
         working_glyph.loc[working_glyph.index[0],["scale_x","scale_y","scale_z"]] = None #[i][j] is the i'th glyph in list, and j'th toroid's scale factor
         working_glyph[["scale_x","scale_y","scale_z"]] = working_glyph[["scale_x","scale_y","scale_z"]].astype('float')
-        working_glyph.loc[working_glyph.index[0],["scale_x","scale_y","scale_z"]] = 0.2
+        working_glyph.loc[working_glyph.index[0],["scale_x","scale_y","scale_z"]] = search_metadata["root_scaling"]
 
         #building root node tags. Display the title of the article, and embed the article url to be interacted with
         working_glyph.loc[working_glyph.index[0],'tag_mode'] = 0 #encoded int describes fontsize, color, etc of tag 65536033

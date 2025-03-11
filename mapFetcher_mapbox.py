@@ -39,12 +39,12 @@ def fetchMapImage(latitudes,longitudes,buffer,api_key):
     maxLat =  np.max(latitudes)
     minLong = np.min(longitudes)
     maxLong = np.max(longitudes)
-    print("minlat,maxlat,minlong,maxlong = ", (minLong,maxLong,minLat,maxLat))
+    # print("minlat,maxlat,minlong,maxlong = ", (minLong,maxLong,minLat,maxLat))
     latdistance = geodesic((minLat, minLong), (maxLat, minLong)).km
 
     longdistance = geodesic((minLat, minLong), (minLat, maxLong)).km
 
-    print("(latdistance,longdistance) = ", (latdistance,longdistance))
+    # print("(latdistance,longdistance) = ", (latdistance,longdistance))
 
     centerLat = (minLat + maxLat) / 2
     centerLong = (minLong + maxLong) / 2
@@ -78,8 +78,8 @@ def fetchMapImage(latitudes,longitudes,buffer,api_key):
    # minLat = midpoint - (longdistance/2)
         # maxLat = midpoint + (longdistance/2)
     # print("midpoint =", midpoint)
-    print("new minlat,maxlat,minlong,maxlong = ", (minLong,maxLong,minLat,maxLat))
-    print("new longdistance,latdistance = ",(geodesic((minLat, (minLong + maxLong) / 2), (maxLat, (minLong + maxLong) / 2)).km,geodesic(((minLat + maxLat) / 2, minLong), ((minLat + maxLat) / 2, maxLong)).km))
+    # print("new minlat,maxlat,minlong,maxlong = ", (minLong,maxLong,minLat,maxLat))
+    # print("new longdistance,latdistance = ",(geodesic((minLat, (minLong + maxLong) / 2), (maxLat, (minLong + maxLong) / 2)).km,geodesic(((minLat + maxLat) / 2, minLong), ((minLat + maxLat) / 2, maxLong)).km))
 
     # latPadAmt = latdistance * buffer
     # longPadAmt = longdistance * buffer

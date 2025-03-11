@@ -88,6 +88,7 @@ search_metadata = {
                                             "search_string": "sample string",
                                             "num_results_requested": 200,
                                             "scaling_range": (0.2,2.5),
+                                            "root_scaling":1.0,
                                             "glyph_pattern":"grid",
                                             "scaling_type": "minmax",
                                             "scaling_scope":"dataset", #determines if glyphs scaling is relative to max and min of whole dataset, or just 1 glyph.
@@ -100,7 +101,8 @@ search_metadata = {
                                             "csv_headerFlags":[True,True,None,None],#csv_headerflags determines if the [first row, first column] of csv dataset are identifiers or tags as opposed to data
                                             "csv_heightcolumn":-1,#-1 signifies no column, all glyphs on y plane
                                             "csv_placementData":{"height_min":0,"height_max":30},
-                                            "geo_coords":[[0.1,0.11,0.111],[0.1,0.11,0.111]]  #list of list of latitudes and longitudes
+                                            "geo_coords":[[0.1,0.11,0.111],[0.1,0.11,0.111]],  #list of list of latitudes and longitudes
+                                            "api_keys":{"mapbox":"your_api_key"}
                                             } 
 ############################################################################################################
 # Definitions
@@ -249,6 +251,7 @@ def create_viz():
     global glyphDataCounts
     global min_height_entry
     global max_height_entry
+    global root_node_size_entry
     print("Creating Glyphs")
     # print("glyphDataCounts = ", glyphDataCounts)
         #create a new directory each time the button is pressed, storing the new viz
@@ -319,8 +322,13 @@ def create_viz():
     search_metadata["geometrySelection"] = geometryDropdown.get()
     # search_metadata["num_results_requested"] = num_results_requested
     search_metadata["scaling_range"] = (float(max_scale.get())/(6),float(max_scale.get())) #min scale is 1/6 the max scale
-    search_metadata["csv_placementData"]["height_min"] = float(min_height_entry.get())
-    search_metadata["csv_placementData"]["height_max"] = float(max_height_entry.get())
+    try:
+        search_metadata["csv_placementData"]["height_min"] = float(min_height_entry.get())
+        search_metadata["csv_placementData"]["height_max"] = float(max_height_entry.get())
+    except:
+        pass
+    search_metadata["root_scaling"] = float(root_node_size_entry.get())
+    # print("added root node scaling, = ", search_metadata["root_scaling"])
 
 
     # print('generating antz and tag file. \n Initializing parallel processing')
@@ -600,6 +608,7 @@ def extraBSWindow():
     global max_height_entry
     global dropdown_latitudeSelector
     global dropdown_longitudeSelector
+    global mapbox_api_entry
 
     bsWindow = Toplevel(window)
     bsWindow.title("Custom List & Pubmed")
@@ -665,7 +674,7 @@ def extraBSWindow():
     checkbox_csv_rownames = ttk.Checkbutton(bsWindow, text = "first column header",variable=tkColHeaderVar,onvalue=1,offvalue=0,command=checkbox_clicked)
     checkbox_csv_rownames.place(x=30, y=275)
 
-    bsCanvas.create_text(30,355,text="Height Placement Column, Height(max,min)",anchor="nw",fill="#FFFFFF",font=("Inter", 12 * -1))
+    bsCanvas.create_text(30,355,text="Height Placement Column, Height(min,max)",anchor="nw",fill="#FFFFFF",font=("Inter", 12 * -1))
     dropdown_heightcolumnSelector = ttk.Combobox(bsWindow,values=["None"])
     dropdown_heightcolumnSelector.place(x=30, y=370, width=150, height=26)
     dropdown_heightcolumnSelector.bind("<<ComboboxSelected>>", dropdown_Selector_forCSV_clicked)
@@ -680,7 +689,7 @@ def extraBSWindow():
     max_height_entry.insert(0,"30")
 
     #geospatial stuff
-    bsCanvas.create_text(30,400,text="Latitude Column |                                  Longitude Column",anchor="nw",fill="#FFFFFF",font=("Inter", 12 * -1))
+    bsCanvas.create_text(30,400,text="Latitude Column |                     Longitude Column                   |Mapbox API key",anchor="nw",fill="#FFFFFF",font=("Inter", 12 * -1))
     dropdown_latitudeSelector = ttk.Combobox(bsWindow, values=["None"])
     dropdown_latitudeSelector.place(x=30, y=420, width=150, height=26)
     dropdown_latitudeSelector.bind("<<ComboboxSelected>>", dropdown_Selector_forCSV_clicked)
@@ -690,6 +699,20 @@ def extraBSWindow():
     dropdown_longitudeSelector.place(x=190, y=420, width=150, height=26)
     dropdown_longitudeSelector.bind("<<ComboboxSelected>>", dropdown_Selector_forCSV_clicked)
     dropdown_longitudeSelector.insert(0,"None")
+
+    #mapbox api key entry window
+    mapbox_api_entry = Entry(bsWindow)
+    mapbox_api_entry.place(x=190+160, y=420, width=150, height=26)
+    try:
+        mapbox_path = os.path.join(os.getcwd(),"api_keys","mapbox.txt")
+        with open(mapbox_path,'r') as file:
+            
+            search_metadata["api_keys"]["mapbox"] = file.read()
+            # print("mapbox api = ",search_metadata["api_keys"]["mapbox"])
+        mapbox_api_entry.insert(0,search_metadata["api_keys"]["mapbox"])
+    except:
+        mapbox_api_entry.insert(0,"No API key loaded")
+        print("No mapbox api loaded. Add mapbox.txt to 'api_keys' folder containing api key")
 
 def upload_url_list():
     global custom_url_searchlist
@@ -913,7 +936,8 @@ def collect_csv_data():
     nonscaled_allGlyphData_dict, articleData, search_metadata = generateGlyphInput_CSV(csv_filepath,search_metadata=search_metadata)
     final_articleData = articleData
     # print("wordlist_paths = ",search_metadata["wordlist_paths"])
-    
+    search_metadata["api_keys"]["mapbox"] = mapbox_api_entry.get()
+
     print("collected CSV data")
 
 def checkbox_clicked():
@@ -974,6 +998,7 @@ def main():
     global headlessDropdown
     global wordlistScalingDropdown
     global patternDropdown
+    global root_node_size_entry
 
     scopes = ['https://www.googleapis.com/auth/gmail.readonly']
 
@@ -1067,7 +1092,7 @@ def main():
     button_select_end_date.place(x=600, y=110, height=26, width=70)
 
     #the min and max scaling text boxes
-    canvas.create_text(21,460, anchor="nw", text="Glyph Scaling (Min Max)", fill="#FFFFFF", font=("Inter", 15 * -1))
+    canvas.create_text(21,460, anchor="nw", text="Glyph Scaling (Min Max)    | Root Scaling", fill="#FFFFFF", font=("Inter", 15 * -1))
     min_scale = Entry(window)
     min_scale.place(x = 21, y = 480, height=26, width=35)
     min_scale.insert(0,"0.2")
@@ -1612,8 +1637,15 @@ def main():
     patternDropdown.bind("<<ComboboxSelected>>", change_glyph_pattern_selection)
     patternDropdown.insert(0,'grid')
 
+    #ROOT node scaling
+    root_node_size_entry = Entry(window)
+    root_node_size_entry.place(x=270, y = 480, height=26, width=35)
+    root_node_size_entry.insert(0,"0.2")
+
     window.resizable(False, False)
     window.mainloop()
+
+
 
 
 if __name__ == "__main__":
