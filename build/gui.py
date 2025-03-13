@@ -100,6 +100,7 @@ search_metadata = {
                                             "csv_path":"path/to/csv.csv",
                                             "csv_headerFlags":[True,True,None,None],#csv_headerflags determines if the [first row, first column] of csv dataset are identifiers or tags as opposed to data
                                             "csv_heightcolumn":-1,#-1 signifies no column, all glyphs on y plane
+                                            "csv_xy_displacement":[None,None],
                                             "csv_placementData":{"height_min":0,"height_max":30},
                                             "geo_coords":[[0.1,0.11,0.111],[0.1,0.11,0.111]],  #list of list of latitudes and longitudes
                                             "api_keys":{"mapbox":"your_api_key"}
@@ -595,6 +596,8 @@ def change_glyph_pattern_selection(event):
 
     search_metadata["glyph_pattern"] = patternDropdown.get()
     print("glyph pattern changed to:",patternDropdown.get())
+    if search_metadata["glyph_pattern"] == "wordlist_axes":
+        print("define axes with other text options \n csv x and csv y displacement dropdowns")
 
 #old features ported forwared
 def extraBSWindow():
@@ -611,6 +614,8 @@ def extraBSWindow():
     global mapbox_api_entry
     global dropdown_rootColorColumn
     global dropdown_rootColorGradient
+    global dropdown_x_displacementColumn
+    global dropdown_y_displacementColumn
 
     bsWindow = Toplevel(window)
     bsWindow.title("Custom List & Pubmed")
@@ -676,18 +681,29 @@ def extraBSWindow():
     checkbox_csv_rownames = ttk.Checkbutton(bsWindow, text = "first column header",variable=tkColHeaderVar,onvalue=1,offvalue=0,command=checkbox_clicked)
     checkbox_csv_rownames.place(x=30, y=275)
 
-    bsCanvas.create_text(30,355,text="Height Placement Column, Height(min,max)",anchor="nw",fill="#FFFFFF",font=("Inter", 12 * -1))
+    bsCanvas.create_text(30,355,text="X Displacement Column,       Y Displacement Column,        Height Placement Column, Height(min,max)",anchor="nw",fill="#FFFFFF",font=("Inter", 12 * -1))
+    dropdown_x_displacementColumn = ttk.Combobox(bsWindow,values=["None"])
+    dropdown_x_displacementColumn.place(x=30, y=370, width=150, height=26)
+    dropdown_x_displacementColumn.bind("<<ComboboxSelected>>", dropdown_Selector_forCSV_clicked)
+    dropdown_x_displacementColumn.insert(0,"None")
+    
+    dropdown_y_displacementColumn = ttk.Combobox(bsWindow,values=["None"])
+    dropdown_y_displacementColumn.place(x=30+150+10, y=370, width=150, height=26)
+    dropdown_y_displacementColumn.bind("<<ComboboxSelected>>", dropdown_Selector_forCSV_clicked)
+    dropdown_y_displacementColumn.insert(0,"None")
+
+    
     dropdown_heightcolumnSelector = ttk.Combobox(bsWindow,values=["None"])
-    dropdown_heightcolumnSelector.place(x=30, y=370, width=150, height=26)
+    dropdown_heightcolumnSelector.place(x=30+300+20, y=370, width=150, height=26)
     dropdown_heightcolumnSelector.bind("<<ComboboxSelected>>", dropdown_Selector_forCSV_clicked)
     dropdown_heightcolumnSelector.insert(0,"None")
 
     min_height_entry = Entry(bsWindow)
-    min_height_entry.place(x=185, y=370, width=30, height=26)
+    min_height_entry.place(x=185+300+20, y=370, width=30, height=26)
     min_height_entry.insert(0,"0")
 
     max_height_entry = Entry(bsWindow)
-    max_height_entry.place(x=215, y=370, width=30, height=26)
+    max_height_entry.place(x=215+300+20, y=370, width=30, height=26)
     max_height_entry.insert(0,"30")
 
     bsCanvas.create_text(30,400,text="Root Color Column | Root Color Gradient (High to Low)",anchor="nw",fill="#FFFFFF",font=("Inter", 12 * -1))
@@ -886,6 +902,8 @@ def upload_csv():
     global dropdown_latitudeSelector
     global dropdown_longitudeSelector
     global dropdown_rootColorColumn
+    global dropdown_x_displacementColumn
+    global dropdown_y_displacementColumn
 
 
     csv_filepath = filedialog.askopenfilename()
@@ -936,6 +954,8 @@ def upload_csv():
     dropdown_latitudeSelector["values"] = csv_latitudeColumn_vals
     dropdown_longitudeSelector["values"] = csv_longitudeColumn_vals
     dropdown_rootColorColumn["values"] = csv_rootColorColumn_vals
+    dropdown_x_displacementColumn["values"] = csv_heightcolumn_vals
+    dropdown_y_displacementColumn["values"] = csv_heightcolumn_vals
     
     
     scalingDict = {"Sphere":(19*x**2)/(x**3),
@@ -979,6 +999,8 @@ def dropdown_Selector_forCSV_clicked(event):
     global patternDropdown
     global dropdown_rootColorColumn
     global dropdown_rootColorGradient
+    global dropdown_x_displacementColumn
+    global dropdown_y_displacementColumn
 
     string = dropdown_heightcolumnSelector.get()
     if string == "None": search_metadata["csv_heightcolumn"] = -1
@@ -986,6 +1008,33 @@ def dropdown_Selector_forCSV_clicked(event):
         values = dropdown_heightcolumnSelector["values"]
         column = list(values).index(string) - 1
         search_metadata["csv_heightcolumn"] = column
+
+    string = dropdown_x_displacementColumn.get()
+    if string == "None": 
+        # print("csv_xydisplacementX = ",search_metadata["csv_xy_displacement"])
+        search_metadata["csv_xy_displacement"][0] = None
+    if string != "None":
+        values = dropdown_x_displacementColumn["values"]
+        column = list(values).index(string) - 1
+        search_metadata["csv_xy_displacement"][0] = column
+
+        search_metadata["glyph_pattern"] = "data_axes"
+        patternDropdown.delete(0,END)
+        patternDropdown.insert(0,"data_axes")
+
+    
+    string = dropdown_y_displacementColumn.get()
+    if string == "None": 
+        # print("csv_xydisplacementY = ",search_metadata["csv_xy_displacement"])
+        search_metadata["csv_xy_displacement"][1] = None
+    if string != "None":
+        values = dropdown_y_displacementColumn["values"]
+        column = list(values).index(string) - 1
+        search_metadata["csv_xy_displacement"][1] = column
+
+        search_metadata["glyph_pattern"] = "data_axes"
+        patternDropdown.delete(0,END)
+        patternDropdown.insert(0,"data_axes")
 
     string = dropdown_latitudeSelector.get()
     if string == "None":search_metadata["csv_headerFlags"][2] = None
@@ -1681,7 +1730,7 @@ def main():
 
     #glyph pattern dropdown
     canvas.create_text(130,400, anchor="nw", text="Glyph Pattern", fill="#FFFFFF", font=("Inter", 15 * -1))
-    patternDropdown = ttk.Combobox(values = ["grid","arc"]) 
+    patternDropdown = ttk.Combobox(values = ["grid","arc","wordlist_axes"]) 
     patternDropdown.place(x=130, y=420, height=26, width=100)
     patternDropdown.bind("<<ComboboxSelected>>", change_glyph_pattern_selection)
     patternDropdown.insert(0,'grid')

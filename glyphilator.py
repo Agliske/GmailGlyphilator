@@ -465,12 +465,14 @@ def generateGlyphInput_CSV(filepath_csv, search_metadata = {
     if latitudeColumnIndex != None and longitudeColumnIndex != None:
         if latitudeColumnIndex < longitudeColumnIndex: longitudeColumnIndex = longitudeColumnIndex - 1 #index shifting after column deletion
         if latitudeColumnIndex < search_metadata["csv_heightcolumn"]: search_metadata["csv_heightcolumn"] = search_metadata["csv_heightcolumn"] - 1
-        if latitudeColumnIndex < search_metadata["csv_rootColorColumn"]: search_metadata["csv_rootColorColumn"] = search_metadata["csv_rootColorColumn"] - 1
+        if search_metadata["csv_rootColorColumn"] != None:
+            if latitudeColumnIndex < search_metadata["csv_rootColorColumn"]: search_metadata["csv_rootColorColumn"] = search_metadata["csv_rootColorColumn"] - 1
     if longitudeColumnIndex != None:
         csv_array = np.delete(csv_array,longitudeColumnIndex,axis=1)
         columnNames = np.delete(columnNames,longitudeColumnIndex)
         if longitudeColumnIndex < search_metadata["csv_heightcolumn"]: search_metadata["csv_heightcolumn"] = search_metadata["csv_heightcolumn"] - 1 #more index shifting
-        if longitudeColumnIndex < search_metadata["csv_rootColorColumn"]: search_metadata["csv_rootColorColumn"] = search_metadata["csv_rootColorColumn"] - 1 #more index shifting
+        if search_metadata["csv_rootColorColumn"] != None:
+            if longitudeColumnIndex < search_metadata["csv_rootColorColumn"]: search_metadata["csv_rootColorColumn"] = search_metadata["csv_rootColorColumn"] - 1 #more index shifting
    
     csv_array = csv_array.astype(float)
     allGlyphData_dict = {
@@ -574,6 +576,42 @@ def generate_geospatial(search_metadata):
     
     coordList = list(zip(coordList[0],coordList[1]))
     return coordList
+
+def generate_xy_displacement(nonScaledAllGlyphData_dict,search_metadata):
+    allGlyphData = nonScaledAllGlyphData_dict[search_metadata["scaling_wrt_wordlist"]]
+    x_columnIndex = search_metadata["csv_xy_displacement"][0]
+    y_columnIndex = search_metadata["csv_xy_displacement"][1]
+
+    if x_columnIndex == None:
+        x_column = np.zeros((len(allGlyphData)))
+    if y_columnIndex == None:
+        y_column = np.zeros((len(allGlyphData)))
+
+    #filling in whatever x or y columns arent == None with their data
+    if x_columnIndex != None: x_column = []
+    if y_columnIndex != None:y_column = []
+    for i in range(0,len(allGlyphData)):
+        if x_columnIndex != None: x_column.append(allGlyphData[i][search_metadata["csv_xy_displacement"][0]])
+        if y_columnIndex != None: y_column.append(allGlyphData[i][search_metadata["csv_xy_displacement"][1]])
+    
+    x_array = np.array(x_column)
+    y_array = np.array(y_column)
+
+    xmin = min(x_column)
+    xmax = max(x_column)
+    ymin = min(y_column)
+    ymax = max(y_column)
+
+    targetmin = -28
+    targetmax = 28
+
+    x_coords = targetmin + (x_array - xmin) * (targetmax - targetmin) / (xmax - xmin)
+    y_coords = targetmin + (y_array - ymin) * (targetmax - targetmin) / (ymax - ymin)
+    
+    coords_array = list(zip(x_coords,y_coords))
+
+    return coords_array
+
 def generate_glyphHeights(nonScaledAllGlyphData_dict,search_metadata):
     
     allGlyphData = nonScaledAllGlyphData_dict[search_metadata["scaling_wrt_wordlist"]]
@@ -901,6 +939,8 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
         
         # print("existing tex id = ",existing_texture_id)
         # print("glyphlocations = ", glyphLocations)
+    if search_metadata["glyph_pattern"] == "data_axes":
+        glyphLocations = generate_xy_displacement(nonScaledAllGlyphData_dict,search_metadata)
     else:
         glyphLocationFunction = {"grid":generate_centered_grid,
                                 "arc":generate_arc}
