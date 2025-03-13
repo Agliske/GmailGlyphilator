@@ -420,29 +420,31 @@ def generateGlyphInput_CSV(filepath_csv, search_metadata = {
         rowNames = csv_array[:,0]
         csv_array = np.delete(csv_array,0,axis=1)
         # print("rowNames = ",rowNames)
-    # Convert the entire array to object dtype to allow modifications
-    csv_array = csv_array.astype(object)
+    if latitudeColumnIndex != None and longitudeColumnIndex != None:
+       
+        # Convert the entire array to object dtype to allow modifications
+        csv_array = csv_array.astype(object)
 
-    # Convert Latitude and Longitude to float, setting non-convertible values to NaN
-    csv_array[:, latitudeColumnIndex] = np.where(csv_array[:, latitudeColumnIndex] == '', np.nan, csv_array[:, latitudeColumnIndex])
-    csv_array[:, longitudeColumnIndex] = np.where(csv_array[:, longitudeColumnIndex] == '', np.nan, csv_array[:, longitudeColumnIndex])
+        # Convert Latitude and Longitude to float, setting non-convertible values to NaN
+        csv_array[:, latitudeColumnIndex] = np.where(csv_array[:, latitudeColumnIndex] == '', np.nan, csv_array[:, latitudeColumnIndex])
+        csv_array[:, longitudeColumnIndex] = np.where(csv_array[:, longitudeColumnIndex] == '', np.nan, csv_array[:, longitudeColumnIndex])
 
-    # Convert Latitude and Longitude columns to float type
-    csv_array[:, latitudeColumnIndex] = csv_array[:, latitudeColumnIndex].astype(float)
-    csv_array[:, longitudeColumnIndex] = csv_array[:, longitudeColumnIndex].astype(float)
+        # Convert Latitude and Longitude columns to float type
+        csv_array[:, latitudeColumnIndex] = csv_array[:, latitudeColumnIndex].astype(float)
+        csv_array[:, longitudeColumnIndex] = csv_array[:, longitudeColumnIndex].astype(float)
 
-    # Create a mask to remove rows with NaN in Latitude or Longitude
-    # valid_rows = ~np.isnan(csv_array[:, latitudeColumnIndex].astype(float)) & ~np.isnan(csv_array[:, longitudeColumnIndex].astype(float))
-    valid_rows = ~np.any(np.isnan(csv_array[:, :].astype(float)), axis=1)  
+        # Create a mask to remove rows with NaN in Latitude or Longitude
+        # valid_rows = ~np.isnan(csv_array[:, latitudeColumnIndex].astype(float)) & ~np.isnan(csv_array[:, longitudeColumnIndex].astype(float))
+        valid_rows = ~np.any(np.isnan(csv_array[:, :].astype(float)), axis=1)  
 
 
-    # Apply the mask to filter valid rows
-    csv_array = csv_array[valid_rows]
+        # Apply the mask to filter valid rows
+        csv_array = csv_array[valid_rows]
 
-    # Filtering rows that have latitude <85 degrees. they wont be accpted by mapbox api
-    csv_array[:, latitudeColumnIndex] = csv_array[:, latitudeColumnIndex].astype(float)
-    valid_rows = csv_array[:, latitudeColumnIndex] <= 85
-    csv_array = csv_array[valid_rows]
+        # Filtering rows that have latitude <85 degrees. they wont be accpted by mapbox api
+        csv_array[:, latitudeColumnIndex] = csv_array[:, latitudeColumnIndex].astype(float)
+        valid_rows = csv_array[:, latitudeColumnIndex] <= 85
+        csv_array = csv_array[valid_rows]
 
     if latitudeColumnIndex != None:
         latitudeColumn = csv_array[:,latitudeColumnIndex]
@@ -463,10 +465,13 @@ def generateGlyphInput_CSV(filepath_csv, search_metadata = {
     if latitudeColumnIndex != None and longitudeColumnIndex != None:
         if latitudeColumnIndex < longitudeColumnIndex: longitudeColumnIndex = longitudeColumnIndex - 1 #index shifting after column deletion
         if latitudeColumnIndex < search_metadata["csv_heightcolumn"]: search_metadata["csv_heightcolumn"] = search_metadata["csv_heightcolumn"] - 1
+        if latitudeColumnIndex < search_metadata["csv_rootColorColumn"]: search_metadata["csv_rootColorColumn"] = search_metadata["csv_rootColorColumn"] - 1
     if longitudeColumnIndex != None:
         csv_array = np.delete(csv_array,longitudeColumnIndex,axis=1)
         columnNames = np.delete(columnNames,longitudeColumnIndex)
         if longitudeColumnIndex < search_metadata["csv_heightcolumn"]: search_metadata["csv_heightcolumn"] = search_metadata["csv_heightcolumn"] - 1 #more index shifting
+        if longitudeColumnIndex < search_metadata["csv_rootColorColumn"]: search_metadata["csv_rootColorColumn"] = search_metadata["csv_rootColorColumn"] - 1 #more index shifting
+   
     csv_array = csv_array.astype(float)
     allGlyphData_dict = {
         "total": None,
@@ -589,6 +594,87 @@ def generate_glyphHeights(nonScaledAllGlyphData_dict,search_metadata):
     max_val = max(column_array)
     heights = min_height + (column_array - min_val) * (max_height - min_height) / (max_val - min_val)
     return heights
+
+def generate_rootColors(nonScaledAllGlyphData_dict,search_metadata):
+    
+    #colors are reversed compared to their dict keys because we want high-to-low value mapping, but algorithm gives low-to-high index scaling.
+    color_gradient_dict = {
+        "rainbow":[[255, 0, 150], [255, 0, 175], [255, 0, 200], [255, 0, 225], [255, 0, 255],  # V transition
+            [225, 0, 255], [200, 0, 255], [175, 0, 255], [150, 0, 255], [125, 0, 255],  
+            [100, 0, 255], [75, 0, 255], [50, 0, 255], [25, 0, 255], [0, 0, 255],  # B transition  
+            [0, 25, 255], [0, 50, 255], [0, 75, 255], [0, 100, 255], [0, 125, 255],  
+            [0, 150, 255], [0, 175, 255], [0, 200, 255], [0, 225, 255], [0, 255, 255],  # B -> G  
+            [0, 255, 225], [0, 255, 200], [0, 255, 175], [0, 255, 150], [0, 255, 125],  
+            [0, 255, 100], [0, 255, 75], [0, 255, 50], [0, 255, 25], [0, 255, 0],  # G -> Y  
+            [25, 255, 0], [50, 255, 0], [75, 255, 0], [100, 255, 0], [125, 255, 0],  
+            [150, 255, 0], [175, 255, 0], [200, 255, 0], [225, 255, 0], [255, 255, 0],  # Y -> O  
+            [255, 225, 0], [255, 200, 0], [255, 175, 0], [255, 150, 0], [255, 125, 0],  
+            [255, 100, 0], [255, 75, 0], [255, 50, 0], [255, 25, 0], [255, 0, 0]],
+        "reverse_rainbow":[[255, 0, 0], [255, 25, 0], [255, 50, 0], [255, 75, 0], [255, 100, 0],  # R -> O
+            [255, 125, 0], [255, 150, 0], [255, 175, 0], [255, 200, 0], [255, 225, 0],
+            [255, 255, 0], [225, 255, 0], [200, 255, 0], [175, 255, 0], [150, 255, 0],  # O -> Y
+            [125, 255, 0], [100, 255, 0], [75, 255, 0], [50, 255, 0], [25, 255, 0],
+            [0, 255, 0], [0, 255, 25], [0, 255, 50], [0, 255, 75], [0, 255, 100],  # Y -> G
+            [0, 255, 125], [0, 255, 150], [0, 255, 175], [0, 255, 200], [0, 255, 225],
+            [0, 255, 255], [0, 225, 255], [0, 200, 255], [0, 175, 255], [0, 150, 255],  # G -> B
+            [0, 125, 255], [0, 100, 255], [0, 75, 255], [0, 50, 255], [0, 25, 255],
+            [0, 0, 255], [25, 0, 255], [50, 0, 255], [75, 0, 255], [100, 0, 255],   # B transition
+            [125, 0, 255], [150, 0, 255], [175, 0, 255], [200, 0, 255], [225, 0, 255],
+            [255, 0, 255], [255, 0, 225], [255, 0, 200], [255, 0, 175], [255, 0, 150]], #V transition
+        
+        "blue_to_red":[[255, 0, 0], [250, 0, 5], [245, 0, 10], [240, 0, 15], [235, 0, 20],  #for example this is really red to blue in code, but the high numbers show up blue in viz
+            [230, 0, 25], [225, 0, 30], [220, 0, 35], [215, 0, 40], [210, 0, 45],  
+            [205, 0, 50], [200, 0, 55], [195, 0, 60], [190, 0, 65], [185, 0, 70],  
+            [180, 0, 75], [175, 0, 80], [170, 0, 85], [165, 0, 90], [160, 0, 95],  
+            [155, 0, 100], [150, 0, 105], [145, 0, 110], [140, 0, 115], [135, 0, 120],  
+
+            # Transition through deep purples
+            [130, 0, 125], [125, 0, 130], [120, 0, 135], [115, 0, 140], [110, 0, 145],  
+            [105, 0, 150], [100, 0, 155], [95, 0, 160], [90, 0, 165], [85, 0, 170],  
+            [80, 0, 175], [75, 0, 180], [70, 0, 185], [65, 0, 190], [60, 0, 195],  
+            [55, 0, 200], [50, 0, 205], [45, 0, 210], [40, 0, 215], [35, 0, 220],  
+            [30, 0, 225], [25, 0, 230], [20, 0, 235], [15, 0, 240], [10, 0, 245],  
+            [5, 0, 250], [0, 0, 255]],  # Final Blue,
+        "red_to_blue":[[0, 0, 255], [5, 0, 250], [10, 0, 245], [15, 0, 240], [20, 0, 235],  
+            [25, 0, 230], [30, 0, 225], [35, 0, 220], [40, 0, 215], [45, 0, 210],  
+            [50, 0, 205], [55, 0, 200], [60, 0, 195], [65, 0, 190], [70, 0, 185],  
+            [75, 0, 180], [80, 0, 175], [85, 0, 170], [90, 0, 165], [95, 0, 160],  
+            [100, 0, 155], [105, 0, 150], [110, 0, 145], [115, 0, 140], [120, 0, 135],  
+
+            # Transition through deep purples
+            [125, 0, 130], [130, 0, 125], [135, 0, 120], [140, 0, 115], [145, 0, 110],  
+            [150, 0, 105], [155, 0, 100], [160, 0, 95], [165, 0, 90], [170, 0, 85],  
+            [175, 0, 80], [180, 0, 75], [185, 0, 70], [190, 0, 65], [195, 0, 60],  
+            [200, 0, 55], [205, 0, 50], [210, 0, 45], [215, 0, 40], [220, 0, 35],  
+            [225, 0, 30], [230, 0, 25], [235, 0, 20], [240, 0, 15], [245, 0, 10],  
+            [250, 0, 5], [255, 0, 0]]
+    }
+    
+    #getting the data in column form for our column of interest
+    allGlyphData = nonScaledAllGlyphData_dict[search_metadata["scaling_wrt_wordlist"]]
+    columnData = []
+    for i in range(0,len(allGlyphData)):
+        columnData.append(allGlyphData[i][search_metadata["csv_rootColorColumn"]])
+
+    #mapping the value of each column index to an index in the gradient of choice. IE low column value --> low index.
+    colorGradientChoice = search_metadata["csv_rootColorGradient"]
+    colorGradient = color_gradient_dict[colorGradientChoice]
+    minIndex = 0
+    maxIndex = len(colorGradient) - 1
+    
+    columnArray = np.array(columnData)
+    min_val = min(columnArray)
+    max_val = max(columnArray)
+    colorIndices = minIndex + (columnArray - min_val) * (maxIndex - minIndex) / (max_val - min_val)
+
+    #finally choosing the RGB tuple based upon the index that we calculated above.
+    rootColors = []
+    for i in range(0,len(columnData)):
+        color = colorGradient[int(colorIndices[i])]
+        rootColors.append(color)
+    
+    return rootColors
+
     
 def evenlySpacedAngles(N,objAngle = 360): #N: how many elements we want evenly spaced around 360deg object
     
@@ -822,6 +908,9 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
         glyphLocations = glyphLocationFunction[search_metadata["glyph_pattern"]](len(allGlyphData),glyphSeparationDistance) #generate (x,y) coords for each root glyph
     
     glyphHeights = generate_glyphHeights(nonScaledAllGlyphData_dict,search_metadata=search_metadata)
+    
+    if search_metadata["csv_rootColorColumn"] != None: 
+        rootColors = generate_rootColors(nonScaledAllGlyphData_dict=nonScaledAllGlyphData_dict,search_metadata=search_metadata)
 
     colors = chooseBasicColors(allGlyphData)
 
@@ -844,10 +933,9 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
         working_glyph.loc[working_glyph.index[0],['np_node_id','np_data_id','record_id']] = node_id_counter
         working_glyph.loc[working_glyph.index[0],'parent_id'] = 40 #the parent id for the root is always 0
 
-        #changing scaling of root to mmake everything fit on sub-grid
-        working_glyph.loc[working_glyph.index[0],["scale_x","scale_y","scale_z"]] = None #[i][j] is the i'th glyph in list, and j'th toroid's scale factor
-        working_glyph[["scale_x","scale_y","scale_z"]] = working_glyph[["scale_x","scale_y","scale_z"]].astype('float')
-        working_glyph.loc[working_glyph.index[0],["scale_x","scale_y","scale_z"]] = search_metadata["root_scaling"]
+        #change root node geometry to sphere if height != 0
+        if sum(glyphHeights) != 0:
+            working_glyph.loc[working_glyph.index[0],'np_geometry_id'] = geometrySelectionDict["Sphere"]
 
         #building root node tags. Display the title of the article, and embed the article url to be interacted with
         working_glyph.loc[working_glyph.index[0],'tag_mode'] = 0 #encoded int describes fontsize, color, etc of tag 65536033
@@ -878,14 +966,24 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
             working_glyph['translate_z'] = working_glyph['translate_z'].astype(float,copy=False)
             working_glyph.loc[working_glyph['parent_id'] == 40,'translate_z'] = glyphHeights[i] #add in glyph heights
             #scaling toroid based upon how long the content was.
-            # working_glyph.loc[working_glyph.index[1],['ratio']] = articleLengths[i]
+                #not doing that anymore due to incrased functionality
+
+            #changing scaling of root to make everything fit on sub-grid
+            working_glyph.loc[working_glyph.index[0],["scale_x","scale_y","scale_z"]] = None #[i][j] is the i'th glyph in list, and j'th toroid's scale factor
+            working_glyph[["scale_x","scale_y","scale_z"]] = working_glyph[["scale_x","scale_y","scale_z"]].astype('float')
+            working_glyph.loc[working_glyph.index[0],["scale_x","scale_y","scale_z"]] = search_metadata["root_scaling"]
+
+            #adding color to root node if it was selected in search_metadata
+            if search_metadata["csv_rootColorColumn"] != None:
+                working_glyph.loc[working_glyph.index[0],["color_r","color_g","color_b"]] = rootColors[i]
+
 
             #adding text to root node tags. Display the title of the article, and embed the article url to be interacted with
             working_root_tags.loc[working_root_tags.index[0],'title'] = None
             working_root_tags['title'] = working_root_tags['title'].astype(str,copy=False)
             working_root_tags.loc[working_root_tags.index[0],'title'] = str(generateTitleURLTag(articleData[i]))
 
-
+            
             #generating tags for layer 2 toroid that include number of words in the article/abstract/text
             layer2_toroid_tag = pd.read_csv(tag_file_path)
             layer2_toroid_tag.loc[layer2_toroid_tag.index[0],'tag_mode'] = 0

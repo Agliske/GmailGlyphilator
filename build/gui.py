@@ -609,6 +609,8 @@ def extraBSWindow():
     global dropdown_latitudeSelector
     global dropdown_longitudeSelector
     global mapbox_api_entry
+    global dropdown_rootColorColumn
+    global dropdown_rootColorGradient
 
     bsWindow = Toplevel(window)
     bsWindow.title("Custom List & Pubmed")
@@ -688,21 +690,33 @@ def extraBSWindow():
     max_height_entry.place(x=215, y=370, width=30, height=26)
     max_height_entry.insert(0,"30")
 
+    bsCanvas.create_text(30,400,text="Root Color Column | Root Color Gradient (High to Low)",anchor="nw",fill="#FFFFFF",font=("Inter", 12 * -1))
+    dropdown_rootColorColumn = ttk.Combobox(bsWindow,values=["None"])
+    dropdown_rootColorColumn.place(x=30, y=420, width=150, height=26)
+    dropdown_rootColorColumn.bind("<<ComboboxSelected>>", dropdown_Selector_forCSV_clicked)
+    dropdown_rootColorColumn.insert(0,"None")
+
+    dropdown_rootColorGradient = ttk.Combobox(bsWindow,values=["None","rainbow","reverse_rainbow","red_to_blue","blue_to_red"])
+    dropdown_rootColorGradient.place(x=190, y=420, width=150, height=26)
+    dropdown_rootColorGradient.bind("<<ComboboxSelected>>", dropdown_Selector_forCSV_clicked)
+    dropdown_rootColorGradient.insert(0,"None")
+
+
     #geospatial stuff
-    bsCanvas.create_text(30,400,text="Latitude Column |                     Longitude Column                   |Mapbox API key",anchor="nw",fill="#FFFFFF",font=("Inter", 12 * -1))
+    bsCanvas.create_text(30,500,text="Latitude Column |                     Longitude Column                   |Mapbox API key",anchor="nw",fill="#FFFFFF",font=("Inter", 12 * -1))
     dropdown_latitudeSelector = ttk.Combobox(bsWindow, values=["None"])
-    dropdown_latitudeSelector.place(x=30, y=420, width=150, height=26)
+    dropdown_latitudeSelector.place(x=30, y=520, width=150, height=26)
     dropdown_latitudeSelector.bind("<<ComboboxSelected>>", dropdown_Selector_forCSV_clicked)
     dropdown_latitudeSelector.insert(0,"None")
 
     dropdown_longitudeSelector = ttk.Combobox(bsWindow, values=["None"])
-    dropdown_longitudeSelector.place(x=190, y=420, width=150, height=26)
+    dropdown_longitudeSelector.place(x=190, y=520, width=150, height=26)
     dropdown_longitudeSelector.bind("<<ComboboxSelected>>", dropdown_Selector_forCSV_clicked)
     dropdown_longitudeSelector.insert(0,"None")
 
     #mapbox api key entry window
     mapbox_api_entry = Entry(bsWindow)
-    mapbox_api_entry.place(x=190+160, y=420, width=150, height=26)
+    mapbox_api_entry.place(x=190+160, y=520, width=150, height=26)
     try:
         mapbox_path = os.path.join(os.getcwd(),"api_keys","mapbox.txt")
         with open(mapbox_path,'r') as file:
@@ -713,6 +727,8 @@ def extraBSWindow():
     except:
         mapbox_api_entry.insert(0,"No API key loaded")
         print("No mapbox api loaded. Add mapbox.txt to 'api_keys' folder containing api key")
+    
+
 
 def upload_url_list():
     global custom_url_searchlist
@@ -869,6 +885,8 @@ def upload_csv():
     global dropdown_heightcolumnSelector
     global dropdown_latitudeSelector
     global dropdown_longitudeSelector
+    global dropdown_rootColorColumn
+
 
     csv_filepath = filedialog.askopenfilename()
     search_metadata["csv_path"] = csv_filepath
@@ -881,6 +899,8 @@ def upload_csv():
     csv_heightcolumn_vals = ["None"]
     csv_latitudeColumn_vals = ["None"]
     csv_longitudeColumn_vals = ["None"]
+    csv_rootColorColumn_vals = ["None"]
+
     if search_metadata["csv_headerFlags"][0] == True:
         if search_metadata["csv_headerFlags"][1] == True: #if the first column is not data, we dont want to include it in columnNames
             columnNames = csv_array[0,1:]
@@ -893,6 +913,7 @@ def upload_csv():
             csv_heightcolumn_vals.append(string)
             csv_latitudeColumn_vals.append(string)
             csv_longitudeColumn_vals.append(string)
+            csv_rootColorColumn_vals.append(string)
             # print("appending string", string)
 
     if search_metadata["csv_headerFlags"][0] == False:
@@ -908,11 +929,13 @@ def upload_csv():
             csv_heightcolumn_vals.append(string)
             csv_latitudeColumn_vals.append(string)
             csv_longitudeColumn_vals.append(string)
+            csv_rootColorColumn_vals.append(string)
     
     # print(search_metadata["csv_heightcolumn_vals"])
     dropdown_heightcolumnSelector["values"] = csv_heightcolumn_vals
     dropdown_latitudeSelector["values"] = csv_latitudeColumn_vals
     dropdown_longitudeSelector["values"] = csv_longitudeColumn_vals
+    dropdown_rootColorColumn["values"] = csv_rootColorColumn_vals
     
     
     scalingDict = {"Sphere":(19*x**2)/(x**3),
@@ -954,13 +977,18 @@ def dropdown_Selector_forCSV_clicked(event):
     global dropdown_longitudeSelector
     global search_metadata
     global patternDropdown
+    global dropdown_rootColorColumn
+    global dropdown_rootColorGradient
 
     string = dropdown_heightcolumnSelector.get()
-    values = dropdown_heightcolumnSelector["values"]
-    column = list(values).index(string) - 1
-    search_metadata["csv_heightcolumn"] = column
+    if string == "None": search_metadata["csv_heightcolumn"] = -1
+    if string != "None":
+        values = dropdown_heightcolumnSelector["values"]
+        column = list(values).index(string) - 1
+        search_metadata["csv_heightcolumn"] = column
 
     string = dropdown_latitudeSelector.get()
+    if string == "None":search_metadata["csv_headerFlags"][2] = None
     if string != "None":
         
         values = dropdown_latitudeSelector["values"]
@@ -970,7 +998,9 @@ def dropdown_Selector_forCSV_clicked(event):
         patternDropdown.delete(0,END)
         patternDropdown.insert(0,"geospatial")
     
+    
     string = dropdown_longitudeSelector.get()
+    if string == "None":search_metadata["csv_headerFlags"][3] = None
     if string != "None":
         
         values = dropdown_longitudeSelector["values"]
@@ -979,8 +1009,27 @@ def dropdown_Selector_forCSV_clicked(event):
         search_metadata["glyph_pattern"] = "geospatial"
         patternDropdown.delete(0,END)
         patternDropdown.insert(0,"geospatial")
-
-
+    
+    string = dropdown_rootColorColumn.get()
+    if string == "None": 
+        search_metadata["csv_rootColorColumn"] = None
+        dropdown_rootColorGradient.delete(0,END)
+        dropdown_rootColorGradient.insert(0,"None")
+        search_metadata["csv_rootColorGradient"] = None
+    if string != "None":
+        values = dropdown_rootColorColumn["values"]
+        column = list(values).index(string) - 1
+        search_metadata["csv_rootColorColumn"] = column
+        if dropdown_rootColorGradient.get() == "None":
+            dropdown_rootColorGradient.delete(0,END)
+            dropdown_rootColorGradient.insert(0,"rainbow")
+    
+    string = dropdown_rootColorGradient.get()
+    if string == "None": search_metadata["csv_rootColorGradient"] = None
+    if string != "None":
+        search_metadata["csv_rootColorGradient"] = string
+        dropdown_rootColorGradient.delete(0,END)
+        dropdown_rootColorGradient.insert(0,string)
 #main
 def main():
     global calendar_window
@@ -1092,7 +1141,7 @@ def main():
     button_select_end_date.place(x=600, y=110, height=26, width=70)
 
     #the min and max scaling text boxes
-    canvas.create_text(21,460, anchor="nw", text="Glyph Scaling (Min Max)    | Root Scaling", fill="#FFFFFF", font=("Inter", 15 * -1))
+    canvas.create_text(21,460, anchor="nw", text="Glyph Scaling (Min Max)                      | Root Scaling", fill="#FFFFFF", font=("Inter", 15 * -1))
     min_scale = Entry(window)
     min_scale.place(x = 21, y = 480, height=26, width=35)
     min_scale.insert(0,"0.2")
