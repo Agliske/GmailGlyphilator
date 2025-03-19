@@ -670,7 +670,7 @@ def extraBSWindow():
     button_upload_csv.place(x=30, y=300, width=70, height=38)
 
     button_collect_csv_data = Button(bsWindow,text=" Collect\nCSV Data",command=collect_csv_data)
-    button_collect_csv_data.place(x=110, y=300, width=70, height=38)
+    button_collect_csv_data.place(x=30, y=575, width=70, height=38)
 
     
     tkRowHeaderVar = BooleanVar(value=1)
@@ -1214,7 +1214,7 @@ def main():
     geometryDropdown = ttk.Combobox(values = ["Sphere","Toroid","Cube","Octahedron"]) #plan to add cylinder
     geometryDropdown.place(x=21, y=420, height=26, width=100)
     geometryDropdown.bind("<<ComboboxSelected>>", change_glyph_geo_selection)
-    geometryDropdown.insert(0,'Toroid')
+    geometryDropdown.insert(0,'Sphere')
 
     #create the fuzzifier slider
     canvas.create_text(415,174, anchor="nw", text="Search Fuzziness", fill="#FFFFFF", font=("Inter", 15 * -1))

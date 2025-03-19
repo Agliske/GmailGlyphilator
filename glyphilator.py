@@ -941,7 +941,7 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
         # print("glyphlocations = ", glyphLocations)
     if search_metadata["glyph_pattern"] == "data_axes":
         glyphLocations = generate_xy_displacement(nonScaledAllGlyphData_dict,search_metadata)
-    else:
+    if search_metadata["glyph_pattern"] != "data_axes" and search_metadata["glyph_pattern"] != "geospatial":
         glyphLocationFunction = {"grid":generate_centered_grid,
                                 "arc":generate_arc}
         glyphSeparationDistance = 2
