@@ -999,9 +999,14 @@ def collect_csv_data():
     csv_filepath = search_metadata["csv_path"]
     search_metadata["scale_method"] = "csv"
     search_metadata["uploaded_articledata_path"] = "wordcounts_thru_upload"
-
-    nonscaled_allGlyphData_dict, articleData, search_metadata = generateGlyphInput_CSV(csv_filepath,search_metadata=search_metadata)
-    final_articleData = articleData
+    print("ldj",search_metadata["glyph_pattern"])
+    if search_metadata["glyph_pattern"] != "wordlist_axes":
+        print("condition worked!")
+        nonscaled_allGlyphData_dict, articleData, search_metadata = generateGlyphInput_CSV(csv_filepath,search_metadata=search_metadata)
+        final_articleData = articleData
+    if search_metadata["glyph_pattern"] == "wordlist_axes":
+        print("wordlist_axes condition met!")
+    
     # print("wordlist_paths = ",search_metadata["wordlist_paths"])
     search_metadata["api_keys"]["mapbox"] = mapbox_api_entry.get()
 
@@ -1030,7 +1035,9 @@ def dropdown_Selector_forCSV_clicked(event):
     if string == "None": search_metadata["csv_heightcolumn"] = -1
     if string != "None":
         values = dropdown_heightcolumnSelector["values"]
-        column = list(values).index(string) - 1
+        column = list(values).index(string)
+        if search_metadata["glyph_pattern"] != "wordlist_axes":
+            column = column - 1
         search_metadata["csv_heightcolumn"] = column
 
     string = dropdown_x_displacementColumn.get()
@@ -1039,12 +1046,13 @@ def dropdown_Selector_forCSV_clicked(event):
         search_metadata["csv_xy_displacement"][0] = None
     if string != "None":
         values = dropdown_x_displacementColumn["values"]
-        column = list(values).index(string) - 1
+        column = list(values).index(string)
+        if search_metadata["glyph_pattern"] != "wordlist_axes": 
+            column = column - 1
+            search_metadata["glyph_pattern"] = "data_axes"
+            patternDropdown.delete(0,END)
+            patternDropdown.insert(0,"data_axes")
         search_metadata["csv_xy_displacement"][0] = column
-
-        search_metadata["glyph_pattern"] = "data_axes"
-        patternDropdown.delete(0,END)
-        patternDropdown.insert(0,"data_axes")
 
     
     string = dropdown_y_displacementColumn.get()
@@ -1053,12 +1061,14 @@ def dropdown_Selector_forCSV_clicked(event):
         search_metadata["csv_xy_displacement"][1] = None
     if string != "None":
         values = dropdown_y_displacementColumn["values"]
-        column = list(values).index(string) - 1
-        search_metadata["csv_xy_displacement"][1] = column
+        column = list(values).index(string)
+        if search_metadata["glyph_pattern"] != "wordlist_axes": 
+            column = column - 1
+            search_metadata["glyph_pattern"] = "data_axes"
+            patternDropdown.delete(0,END)
+            patternDropdown.insert(0,"data_axes")
 
-        search_metadata["glyph_pattern"] = "data_axes"
-        patternDropdown.delete(0,END)
-        patternDropdown.insert(0,"data_axes")
+        search_metadata["csv_xy_displacement"][1] = column
 
     string = dropdown_latitudeSelector.get()
     if string == "None":search_metadata["csv_headerFlags"][2] = None

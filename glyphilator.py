@@ -940,9 +940,9 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
         
         # print("existing tex id = ",existing_texture_id)
         # print("glyphlocations = ", glyphLocations)
-    if search_metadata["glyph_pattern"] == "data_axes":
+    if search_metadata["glyph_pattern"] == "data_axes" or search_metadata["glyph_pattern"] == "wordlist_axes":
         glyphLocations = generate_xy_displacement(nonScaledAllGlyphData_dict,search_metadata)
-    if search_metadata["glyph_pattern"] != "data_axes" and search_metadata["glyph_pattern"] != "geospatial":
+    if search_metadata["glyph_pattern"] != "data_axes" and search_metadata["glyph_pattern"] != "geospatial" and search_metadata["glyph_pattern"] != "wordlist_axes":
         glyphLocationFunction = {"grid":generate_centered_grid,
                                 "arc":generate_arc}
         glyphSeparationDistance = 2
