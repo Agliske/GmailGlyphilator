@@ -100,6 +100,7 @@ search_metadata = {
                                             "csv_path":"path/to/csv.csv",
                                             "csv_headerFlags":[True,True,None,None],#csv_headerflags determines if the [first row, first column] of csv dataset are identifiers or tags as opposed to data
                                             "csv_heightcolumn":-1,#-1 signifies no column, all glyphs on y plane
+                                            "csv_rootColorColumn": None,
                                             "csv_xy_displacement":[None,None],
                                             "csv_placementData":{"height_min":0,"height_max":30},
                                             "geo_coords":[[0.1,0.11,0.111],[0.1,0.11,0.111]],  #list of list of latitudes and longitudes
@@ -593,11 +594,34 @@ def upload_wordcount_json():
 def change_glyph_pattern_selection(event):
     global search_metadata
     global patternDropdown
+    global current_wordlist_folder
+    global dropdown_x_displacementColumn
+    global dropdown_y_displacementColumn
 
     search_metadata["glyph_pattern"] = patternDropdown.get()
     print("glyph pattern changed to:",patternDropdown.get())
     if search_metadata["glyph_pattern"] == "wordlist_axes":
         print("define axes with other text options \n csv x and csv y displacement dropdowns")
+        files = os.listdir(current_wordlist_folder)
+    
+
+        list_txt_filepaths = []
+        for file in files:
+            if file.endswith('.txt'):
+                list_txt_filepaths.append(current_wordlist_folder + r"\\" + file)
+        
+        listNames = []
+        for path in list_txt_filepaths:
+            listNames.append(os.path.basename(path))
+        
+        # print('listnames = ',listNames)
+        try:
+
+            dropdown_heightcolumnSelector["values"] = listNames
+            dropdown_x_displacementColumn["values"] = listNames
+            dropdown_y_displacementColumn["values"] = listNames
+        except NameError:
+            print('Press "Other Text Options", then \n select wordlist axes again. \n Use X-Y displacement dropdowns to select wordlist columns')
 
 #old features ported forwared
 def extraBSWindow():

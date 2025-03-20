@@ -880,6 +880,7 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
                                             "protos_save_path":"path/to/antz/save/dir",
                                             "scale_method":"wordlist",
                                             "csv_headerFlags":[True,True],
+                                            "csv_rootColorColumn": None,
                                             "csv_placementData":{"height_min":0,"height_max":30},
                                             "geo_coords":[[0.1,0.11,0.111],[0.1,0.11,0.111]]
                                             }): 
@@ -950,6 +951,7 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
     glyphHeights = generate_glyphHeights(nonScaledAllGlyphData_dict,search_metadata=search_metadata)
     
     if search_metadata["csv_rootColorColumn"] != None: 
+        print(search_metadata["csv_rootColorColumn"])
         rootColors = generate_rootColors(nonScaledAllGlyphData_dict=nonScaledAllGlyphData_dict,search_metadata=search_metadata)
 
     colors = chooseBasicColors(allGlyphData)
