@@ -693,6 +693,9 @@ def extraBSWindow():
     button_upload_csv = Button(bsWindow, text="Upload \n CSV", command=upload_csv)
     button_upload_csv.place(x=30, y=300, width=70, height=38)
 
+    button_select_columns_csv = Button(bsWindow,text="Delete CSV \n Columns",command=csv_column_deletion_window)
+    button_select_columns_csv.place(x=110, y=300, width=70, height=38)
+
     button_collect_csv_data = Button(bsWindow,text=" Collect\nCSV Data",command=collect_csv_data)
     button_collect_csv_data.place(x=30, y=575, width=70, height=38)
 
@@ -768,7 +771,10 @@ def extraBSWindow():
         mapbox_api_entry.insert(0,"No API key loaded")
         print("No mapbox api loaded. Add mapbox.txt to 'api_keys' folder containing api key")
     
-
+def csv_column_deletion_window():
+    csv_window = Tk()
+    yscrollbar = Scrollbar(csv_window)
+    yscrollbar.pack(side=RIGHT,fill=Y)
 
 def upload_url_list():
     global custom_url_searchlist

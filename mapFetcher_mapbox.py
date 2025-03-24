@@ -1,7 +1,7 @@
 import requests
 import numpy as np
 import os
-from geopy.distance import geodesic
+from geopy.distance import geodesic,great_circle
 
 #steps
 # 1.calculate max and min of my lat and long
@@ -23,7 +23,27 @@ latlonglist = [
     (54.9783, -1.6174)    # Newcastle upon Tyne
 ]
 
-def fetchMapImage(latitudes,longitudes,buffer,api_key):
+def coord2proj(coord):
+    lat = coord[0]
+    long = coord[1]
+    R = 6378137
+    X = R * np.radians(long)
+    Y = R * np.log(np.tan(np.pi / 4 + np.radians(lat) / 2))
+    return (X,Y)
+
+def proj2coord(point):
+    X = point[0]
+    Y = point[1]
+    R = 6378137
+
+    D = -Y/R
+    lat = np.degrees(np.pi/2 - 2*np.atan(np.e**D))
+    long = np.degrees(X / R)
+    return (lat,long)
+
+
+
+def fetchMapImage(latitudes,longitudes,buffer = 0.1, api_key = ""):
     """
     fetchMapImage returns a png image to the specified path
 
@@ -40,61 +60,66 @@ def fetchMapImage(latitudes,longitudes,buffer,api_key):
     minLong = np.min(longitudes)
     maxLong = np.max(longitudes)
     # print("minlat,maxlat,minlong,maxlong = ", (minLong,maxLong,minLat,maxLat))
-    latdistance = geodesic((minLat, minLong), (maxLat, minLong)).km
+    (minLatProj,minLongProj) = coord2proj((minLat,minLong))
+    (maxLatProj,maxLongProj) = coord2proj((maxLat,maxLong))
 
-    longdistance = geodesic((minLat, minLong), (minLat, maxLong)).km
+    latdistance = maxLatProj - minLatProj
+    longdistance = maxLongProj - minLongProj
 
-    # print("(latdistance,longdistance) = ", (latdistance,longdistance))
+    latPadAmt = latdistance * buffer
+    longPadAmt = longdistance * buffer
 
-    centerLat = (minLat + maxLat) / 2
-    centerLong = (minLong + maxLong) / 2
+    minLatProj = minLatProj - latPadAmt
+    maxLatProj = maxLatProj + latPadAmt
+    minLongProj = minLongProj - longPadAmt
+    maxLongProj = maxLongProj + longPadAmt
+
+    latdistance = maxLatProj - minLatProj
+    longdistance = maxLongProj - minLongProj
+    
+    print("(longdistance,latdistance) = ", (longdistance,latdistance))
+
+    centerLatProj = (minLatProj + maxLatProj) / 2
+    centerLongProj = (minLongProj + maxLongProj) / 2
 
     if latdistance > longdistance:
-        # midpoint = (minLong + maxLong)/2 #find midpoint on shorter side of bounding rectangle
-        # longExpansion = (latdistance - longdistance) / 2
-        # print("longExpansion = ",longExpansion)
-        # minLong = midpoint - (latdistance/2)
-        # maxLong = midpoint + (latdistance/2)
-        minLong = geodesic(kilometers=latdistance/2).destination((centerLat, centerLong), 270).longitude
-        maxLong = geodesic(kilometers=latdistance/2).destination((centerLat, centerLong), 90).longitude
-  
+        print("latdistance is greater!")
+
+        minLongProj = centerLongProj - latdistance/2
+        maxLongProj = centerLongProj + latdistance/2
+
+
     if longdistance > latdistance:
-        # midpoint = (minLat + maxLat)/2
-        # latExpansion = (longdistance - latdistance) / 2
-        # print("latExapnsion = ", latExpansion)
-        minLat = geodesic(kilometers=longdistance/2).destination((centerLat, centerLong), 180).latitude
-        maxLat = geodesic(kilometers=longdistance/2).destination((centerLat, centerLong), 0).latitude
-    
-    # max_distance = max(latdistance, longdistance)
+        print("longdistance is greater!")
+        
+        minLatProj = centerLatProj - longdistance/2
+        maxLatProj = centerLatProj + longdistance/2
 
-    # latExpansion = (max_distance - latdistance) / 2
-    # longExpansion = (max_distance - longdistance) / 2
-
-    # minLat = geodesic(kilometers=latExpansion).destination((centerLat, centerLong), 180).latitude
-    # maxLat = geodesic(kilometers=latExpansion).destination((centerLat, centerLong), 0).latitude
-    # minLong = geodesic(kilometers=longExpansion).destination((centerLat, centerLong), 270).longitude
-    # maxLong = geodesic(kilometers=longExpansion).destination((centerLat, centerLong), 90).longitude
-
-   # minLat = midpoint - (longdistance/2)
         # maxLat = midpoint + (longdistance/2)
     # print("midpoint =", midpoint)
     # print("new minlat,maxlat,minlong,maxlong = ", (minLong,maxLong,minLat,maxLat))
-    # print("new longdistance,latdistance = ",(geodesic((minLat, (minLong + maxLong) / 2), (maxLat, (minLong + maxLong) / 2)).km,geodesic(((minLat + maxLat) / 2, minLong), ((minLat + maxLat) / 2, maxLong)).km))
+    print("new longdistance,latdistance = ",maxLongProj - minLongProj,maxLatProj - minLatProj,)
 
     # latPadAmt = latdistance * buffer
     # longPadAmt = longdistance * buffer
     # aspectRatio = longdistance/latdistance
 
-    # minLat = minLat - latPadAmt
-    # maxLat = maxLat + latPadAmt
-    # minLong = minLong - longPadAmt
-    # maxLong = maxLong + longPadAmt
-    buffer_km = max(latdistance, longdistance) * buffer
-    minLat = geodesic(kilometers=buffer_km).destination((minLat, centerLong), 180).latitude
-    maxLat = geodesic(kilometers=buffer_km).destination((maxLat, centerLong), 0).latitude
-    minLong = geodesic(kilometers=buffer_km).destination((centerLat, minLong), 270).longitude
-    maxLong = geodesic(kilometers=buffer_km).destination((centerLat, maxLong), 90).longitude
+    # minLatProj = minLatProj - latPadAmt
+    # maxLatProj = maxLatProj + latPadAmt
+    # minLongProj = minLongProj - longPadAmt
+    # maxLongProj = maxLongProj + longPadAmt
+    # buffer_km = max(latdistance, longdistance) * buffer
+    # minLat = great_circle(kilometers=buffer_km).destination((minLat, centerLong), 180).latitude
+    # maxLat = great_circle(kilometers=buffer_km).destination((maxLat, centerLong), 0).latitude
+    # minLong = great_circle(kilometers=buffer_km).destination((centerLat, minLong), 270).longitude
+    # maxLong = great_circle(kilometers=buffer_km).destination((centerLat, maxLong), 90).longitude
 
+    (minLat,minLong) = proj2coord((minLatProj,minLongProj))
+    (maxLat,maxLong) = proj2coord((maxLatProj,maxLongProj))
+    if minLat < -85.05:
+        minLat = -85.05
+    if maxLat > 85.05:
+        maxLat = 85.05
     # if latdistance >= longdistance:
     #     ratio = longdistance/latdistance
     #     requestedResolution = (1280,1280*ratio)
@@ -112,8 +137,9 @@ def fetchMapImage(latitudes,longitudes,buffer,api_key):
     cornerstring = "pin-s+000(" + str(float(minLong)) +","+ str(float(minLat)) + ")" + ",pin-s+000(" + str(float(minLong)) +","+ str(float(maxLat)) + ")" ",pin-s+000(" + str(float(maxLong)) +","+ str(float(minLat)) + ")"",pin-s+000(" + str(float(maxLong)) +","+ str(float(maxLat)) + ")"
     cornerstring = cornerstring + "/"
     markerString = markerString + "/"
-    request_url = r"https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/" + str([float(minLong),float(minLat),float(maxLong),float(maxLat)]) + "/" + str(int(requestedResolution[0])) + "x" + str(int(requestedResolution[1])) + "@2x?access_token=" + str(api_key)
+    request_url = r"https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/" + cornerstring + str([float(minLong),float(minLat),float(maxLong),float(maxLat)]) + "/" + str(int(requestedResolution[0])) + "x" + str(int(requestedResolution[1])) + "@2x?access_token=" + str(api_key)
     
+    print("request url = \n",request_url)
     return request_url,[minLong,maxLong,minLat,maxLat]
 
 def saveMap(request_url):
@@ -134,8 +160,25 @@ def saveMap(request_url):
     return fileCount #filecount is going to be our texture_id in-viz
 
 
-# saveMap("hello","goodbye")
-# mapbox_api_key = r"pk.eyJ1IjoiYWdsaXNrZSIsImEiOiJjbTd4eWkybzEwNDN3MmpwbzE3MW04eTFoIn0.nbkkTpDhyG4WcG5xf-Sr0A"
-# url,cornerCoords = fetchMapImage(latlonglist,0.1,api_key=mapbox_api_key)
-# filecount = saveMap(url)
-# print(url)
+# us_cities_coordinates = [
+#     (40.7128, -74.0060),  # New York, NY
+#     (34.0522, -118.2437), # Los Angeles, CA
+#     (41.8781, -87.6298),  # Chicago, IL
+#     (29.7604, -95.3698),  # Houston, TX
+#     (33.4484, -112.0740), # Phoenix, AZ
+#     (39.9526, -75.1652),  # Philadelphia, PA
+#     (29.4241, -98.4936),  # San Antonio, TX
+#     (32.7157, -117.1611), # San Diego, CA
+#     (37.7749, -122.4194), # San Francisco, CA
+#     (47.6062, -122.3321)  # Seattle, WA
+# ]
+
+
+# us_cities_coordinates_array = np.array(us_cities_coordinates)
+# latitudes = us_cities_coordinates_array[:,0]
+# longitudes = us_cities_coordinates_array[:,1]
+# api_key = r"pk.eyJ1IjoiYWdsaXNrZSIsImEiOiJjbTg1MGl4Z3MxNGo5MmxvcHozdnVtNHY5In0.CFl_aEsMkieHZOR5_rKv4w"
+
+# request_url, [minLong,maxLong,minLat,maxLat] = fetchMapImage(latitudes=latitudes,longitudes=longitudes,buffer=0.1,api_key=api_key)
+# print("hello")
+# print(request_url)

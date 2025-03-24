@@ -559,8 +559,8 @@ def generate_geospatial(search_metadata):
     latitudes = np.array(latitudes)
     
     #web mercator projection
-    X = R * longitudes
-    Y = R * np.log(np.tan(np.pi / 4 + latitudes / 2))
+    X = longitudes
+    Y = np.log(np.tan(np.pi / 4 + latitudes / 2))
 
     coordList = []
     for column in [X,Y]:
