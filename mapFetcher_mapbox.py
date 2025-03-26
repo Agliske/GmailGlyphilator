@@ -59,6 +59,10 @@ def fetchMapImage(latitudes,longitudes,buffer = 0.1, api_key = ""):
     maxLat =  np.max(latitudes)
     minLong = np.min(longitudes)
     maxLong = np.max(longitudes)
+    if minLat < -85.05:
+        minLat = -85.05
+    if maxLat > 85.05:
+        maxLat = 85.05
     # print("minlat,maxlat,minlong,maxlong = ", (minLong,maxLong,minLat,maxLat))
     (minLatProj,minLongProj) = coord2proj((minLat,minLong))
     (maxLatProj,maxLongProj) = coord2proj((maxLat,maxLong))
@@ -116,10 +120,15 @@ def fetchMapImage(latitudes,longitudes,buffer = 0.1, api_key = ""):
 
     (minLat,minLong) = proj2coord((minLatProj,minLongProj))
     (maxLat,maxLong) = proj2coord((maxLatProj,maxLongProj))
+    
     if minLat < -85.05:
         minLat = -85.05
     if maxLat > 85.05:
         maxLat = 85.05
+    if minLong < -180:
+        minLong = -180
+    if maxLong > 180:
+        maxLong = 180
     # if latdistance >= longdistance:
     #     ratio = longdistance/latdistance
     #     requestedResolution = (1280,1280*ratio)
@@ -172,9 +181,22 @@ def saveMap(request_url):
 #     (37.7749, -122.4194), # San Francisco, CA
 #     (47.6062, -122.3321)  # Seattle, WA
 # ]
+world_cities_coordinates = [
+    (48.8566, 2.3522),   # Paris, France
+    (35.6895, 139.6917), # Tokyo, Japan
+    (51.5074, -0.1278),  # London, UK
+    (-33.8688, 151.2093), # Sydney, Australia
+    (55.7558, 37.6173),  # Moscow, Russia
+    (40.4168, -3.7038),  # Madrid, Spain
+    (-23.5505, -46.6333), # São Paulo, Brazil
+    (19.4326, -99.1332), # Mexico City, Mexico
+    (37.5665, 126.9780), # Seoul, South Korea
+    (30.0444, 31.2357)   # Cairo, Egypt
+]
 
 
-# us_cities_coordinates_array = np.array(us_cities_coordinates)
+
+# us_cities_coordinates_array = np.array(world_cities_coordinates)
 # latitudes = us_cities_coordinates_array[:,0]
 # longitudes = us_cities_coordinates_array[:,1]
 # api_key = r"pk.eyJ1IjoiYWdsaXNrZSIsImEiOiJjbTg1MGl4Z3MxNGo5MmxvcHozdnVtNHY5In0.CFl_aEsMkieHZOR5_rKv4w"
