@@ -690,7 +690,8 @@ def extraBSWindow():
     #custom csv widgets & options
     bsCanvas.create_text(30,230,text="Custom CSV",anchor="nw",fill="#FFFFFF",font=("Inter", 20 * -1))
 
-    button_upload_csv = Button(bsWindow, text="Upload \n CSV", command=upload_csv)
+    button_upload_csv = Button(bsWindow, text="Upload \n CSV")
+    button_upload_csv.bind("<Button-1>",upload_csv) #I want to pass an event object when button is pressed
     button_upload_csv.place(x=30, y=300, width=70, height=38)
 
     button_select_columns_csv = Button(bsWindow,text="Edit CSV \n Columns",command=csv_column_edit_window)
@@ -813,8 +814,11 @@ def csv_column_edit_window():
         dropdown_longitudeSelector["values"] = ["None"] + selected_columnNames
         dropdown_rootColorColumn["values"] = ["None"] + selected_columnNames
         
-
-        csv_path = search_metadata["csv_path"]
+        if "autosaved_data" in search_metadata["csv_path"]:
+            print("this is an autosaved path!")
+            csv_path = search_metadata["uploaded_articledata_path"] #so we use original path
+        else:
+            csv_path = search_metadata["csv_path"] #else this is an original csv path
         csv_array = genfromtxt(csv_path, delimiter=",",missing_values="",filling_values=0,skip_header=False,encoding="utf-8",dtype=str)
 
         modified_array = csv_array[:,select_indices]
@@ -840,14 +844,16 @@ def csv_column_edit_window():
         os.makedirs(artData_directory_path, exist_ok=True)
         savetxt(artdata_json_path,modified_array,delimiter=",",fmt="%s")
         
-
+        search_metadata["uploaded_articledata_path"] = search_metadata["csv_path"] #storing original csv path in uploaded_articledata_path
         search_metadata["csv_path"] = artdata_json_path
-        search_metadata["uploaded_articledata_path"] = artData_directory_path
+        # search_metadata["uploaded_articledata_path"] = artData_directory_path
         print("article data saved to directory:")
         print(artData_directory_path)
     
     global dropdown_heightcolumnSelector
     global columnListBox
+
+    upload_csv()#rerunning upload_csv to get the heighcolumn selector values to reset
 
     columnNames = dropdown_heightcolumnSelector["values"]
     
@@ -1032,7 +1038,7 @@ def search_pubmed():
     print("article data saved to directory:")
     print(artData_directory_path)
 
-def upload_csv():
+def upload_csv(event = None):
     global min_scale
     global max_scale
     global search_metadata
@@ -1042,10 +1048,19 @@ def upload_csv():
     global dropdown_rootColorColumn
     global dropdown_x_displacementColumn
     global dropdown_y_displacementColumn
+    print("source = ", event)
+    if event != None:
+        csv_filepath = filedialog.askopenfilename()
+        search_metadata["csv_path"] = csv_filepath
+    print("csv_path = ",search_metadata["csv_path"])
+    if "autosaved_data" in search_metadata["csv_path"]:
+        print("this is autosaved csv path") #therefore used the saved original
+        csv_filepath = search_metadata["uploaded_articledata_path"]
+        print("csv filepath when autosaved path detected:", csv_filepath)
+    if "autosaved_data" not in search_metadata["csv_path"]:
+        csv_filepath = search_metadata["csv_path"]
 
-
-    csv_filepath = filedialog.askopenfilename()
-    search_metadata["csv_path"] = csv_filepath
+    # search_metadata["csv_path"] = csv_filepath
     search_metadata["search_string"] = os.path.basename(str(csv_filepath))
     search_metadata["subject_string"] = os.path.basename(str(csv_filepath))
     print("CSV uploaded from filepath: \n", csv_filepath)
