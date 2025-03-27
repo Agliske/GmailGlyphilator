@@ -19,7 +19,7 @@ import threading
 import datetime
 import subprocess
 from concurrent.futures import ProcessPoolExecutor
-from numpy import concatenate, array, genfromtxt
+from numpy import concatenate, array, genfromtxt, savetxt
 from functools import partial
 import json
 from re import sub
@@ -693,7 +693,7 @@ def extraBSWindow():
     button_upload_csv = Button(bsWindow, text="Upload \n CSV", command=upload_csv)
     button_upload_csv.place(x=30, y=300, width=70, height=38)
 
-    button_select_columns_csv = Button(bsWindow,text="Delete CSV \n Columns",command=csv_column_deletion_window)
+    button_select_columns_csv = Button(bsWindow,text="Edit CSV \n Columns",command=csv_column_edit_window)
     button_select_columns_csv.place(x=110, y=300, width=70, height=38)
 
     button_collect_csv_data = Button(bsWindow,text=" Collect\nCSV Data",command=collect_csv_data)
@@ -771,10 +771,118 @@ def extraBSWindow():
         mapbox_api_entry.insert(0,"No API key loaded")
         print("No mapbox api loaded. Add mapbox.txt to 'api_keys' folder containing api key")
     
-def csv_column_deletion_window():
+def csv_column_edit_window():
+    def csv_column_select_all():
+        global columnListBox
+
+        columnListBox.selection_set(0,END)
+    def csv_column_deselect_all():
+        global columnListBox
+
+        columnListBox.select_clear(0,END)
+    def confirm_csv_selection():
+        global search_metadata
+        global columnListBox
+        global dropdown_heightcolumnSelector
+        global dropdown_x_displacementColumn
+        global dropdown_y_displacementColumn
+        global dropdown_latitudeSelector
+        global dropdown_longitudeSelector
+        global dropdown_rootColorColumn
+        
+
+
+        select_indices = columnListBox.curselection()
+        
+        print("select indices before switch",select_indices)
+        selected_columnNames = []
+        select_indices = list(select_indices)
+        for i in select_indices:
+            selected_columnNames.append(columnListBox.get(i))
+        
+        for i in range(0,len(select_indices)):
+            select_indices[i] = select_indices[i] + 1
+        
+        select_indices = [0] + list(select_indices) #forcing the 1st column to be selected all the time
+        print("select indices after switch", select_indices)
+
+        dropdown_heightcolumnSelector["values"] = ["None"] + selected_columnNames
+        dropdown_x_displacementColumn["values"] = ["None"] + selected_columnNames
+        dropdown_y_displacementColumn["values"] = ["None"] + selected_columnNames
+        dropdown_latitudeSelector["values"] = ["None"] + selected_columnNames
+        dropdown_longitudeSelector["values"] = ["None"] + selected_columnNames
+        dropdown_rootColorColumn["values"] = ["None"] + selected_columnNames
+        
+
+        csv_path = search_metadata["csv_path"]
+        csv_array = genfromtxt(csv_path, delimiter=",",missing_values="",filling_values=0,skip_header=False,encoding="utf-8",dtype=str)
+
+        modified_array = csv_array[:,select_indices]
+
+        #autosaving final_articledata to json
+        print("autosaving csv data")
+        folder_date = str(datetime.datetime.now().strftime('%Y-%m-%d'))
+        date_noDash = str(datetime.datetime.now().strftime('%Y%m%d'))
+    
+        current_time = datetime.datetime.now().strftime('%H%M%S')
+        invalid_chars = r'[<>:"/\\|?*]'
+
+        saved_artData_dir_name = folder_date + "T"+ current_time + "_" + search_metadata["subject_string"] + "_ "+ "rowcount=" + str(modified_array.shape[0])
+        saved_artData_dir_name = sub(invalid_chars,"-",saved_artData_dir_name)
+        
+        artData_directory_path = os.path.join(cwd,'autosaved_data', saved_artData_dir_name)
+
+        filename = sub(".csv","",search_metadata["subject_string"])
+        for name in selected_columnNames:
+            filename = filename + "_" + str(name)
+        filename = filename + ".csv"
+        artdata_json_path = os.path.join(artData_directory_path,filename)
+        os.makedirs(artData_directory_path, exist_ok=True)
+        savetxt(artdata_json_path,modified_array,delimiter=",",fmt="%s")
+        
+
+        search_metadata["csv_path"] = artdata_json_path
+        search_metadata["uploaded_articledata_path"] = artData_directory_path
+        print("article data saved to directory:")
+        print(artData_directory_path)
+    
+    global dropdown_heightcolumnSelector
+    global columnListBox
+
+    columnNames = dropdown_heightcolumnSelector["values"]
+    
+    
+    if columnNames == ("None",): 
+        print("Please Upload CSV before \n attempting to remove column")
+        return
+
     csv_window = Tk()
+
+    button_select_all = Button(csv_window,text="select all",command=csv_column_select_all)
+    button_select_all.pack(padx=10,pady=10)
+
+    button_deselect_all = Button(csv_window,text="Deselect all",command=csv_column_deselect_all)
+    button_deselect_all.pack(padx=10,pady=5)
+
     yscrollbar = Scrollbar(csv_window)
     yscrollbar.pack(side=RIGHT,fill=Y)
+
+    columnListBox = Listbox(csv_window,selectmode="extended",yscrollcommand=yscrollbar.set)
+    columnListBox.pack(padx=10,pady=10,expand=YES,fill="both")
+
+    button_confirm_col_selection = Button(csv_window,text="confirm column selection",command=confirm_csv_selection)
+    button_confirm_col_selection.pack(padx=10,pady=10)
+
+    for i in range(1, len(columnNames)):
+
+        columnListBox.insert(END,columnNames[i])
+        # columnListBox.itemconfig(i,bg = "lime")
+    
+    yscrollbar.config(command=columnListBox.yview)
+
+
+
+
 
 def upload_url_list():
     global custom_url_searchlist
