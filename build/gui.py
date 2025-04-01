@@ -83,6 +83,7 @@ search_metadata = {
                                             "rest_api_query":"Subject:Google Alert",
                                             "headless_browser": True,
                                             "geometrySelection": "Toroid",
+                                            "glyph_options":{"root_geometry":"default","root_topology":"default","b1_geometry":"default","b1_topology":"default"},
                                             "wordlist_paths" : ["path/to/WL1.txt","path/to/WL2.txt","path/to/WL3.txt"],
                                             "search_fuzziness":0.6,
                                             "search_string": "sample string",
@@ -623,6 +624,75 @@ def change_glyph_pattern_selection(event):
         except NameError:
             print('Press "Other Text Options", then \n select wordlist axes again. \n Use X-Y displacement dropdowns to select wordlist columns')
 
+#more glyph options window
+def extraGlyphOptions():
+    global rootGeoDropdown
+    global rootTopoDropdown
+    global b1GeoDropdown
+    global b1TopoDropdown
+
+    def checkGlyphDropdowns(event):
+        global rootGeoDropdown
+        global rootTopoDropdown
+        global b1GeoDropdown
+        global b1TopoDropdown
+        global search_metadata
+
+        selected_combobox = event.widget
+        if selected_combobox == rootGeoDropdown:
+            print("rootgeodropdonw selected")
+            rootTopoDropdown.delete(0,END)
+            rootTopoDropdown.insert(0,rootGeoDropdown.get())
+        if selected_combobox == b1GeoDropdown:
+            print("b1geodropdown selected!")
+            b1TopoDropdown.delete(0,END)
+            b1TopoDropdown.insert(0,rootGeoDropdown.get())
+
+
+
+
+
+    goWindow = Toplevel(window)
+    goWindow.title("More Glyph Options")
+    goWindow.geometry("300x300")
+    goWindow.configure(bg="#1C375E")
+    goCanvas = Canvas(
+        goWindow,
+        bg = "#1C375E",
+        height = 655,
+        width = 655,
+        bd = 0,
+        highlightthickness = 0,
+        relief = "ridge"
+    )
+    goCanvas.place(x=0,y=0)
+
+    #root geometry/topology dropdowns
+    goCanvas.create_text(30,40, anchor="nw", text="Root Geometry | Root Topology", fill="#FFFFFF", font=("Inter", 15 * -1))
+    rootGeoDropdown = ttk.Combobox(goWindow, values = ["Default","Pin","Sphere","Rod","Toroid"]) 
+    rootGeoDropdown.place(x=30, y=60, height=26, width=100)
+    rootGeoDropdown.bind("<<ComboboxSelected>>",checkGlyphDropdowns)
+    rootGeoDropdown.insert(0,'Default')
+
+    rootTopoDropdown = ttk.Combobox(goWindow, values = ["Default","Pin","Sphere","Rod","Toroid"]) 
+    rootTopoDropdown.place(x=140, y=60, height=26, width=100)
+    rootTopoDropdown.bind("<<ComboboxSelected>>",checkGlyphDropdowns)
+    rootTopoDropdown.insert(0,'Default')
+
+    #Branch 1 geometry/topology dropdowns
+    goCanvas.create_text(30,100, anchor="nw", text="Root Geometry | Root Topology", fill="#FFFFFF", font=("Inter", 15 * -1))
+    b1GeoDropdown = ttk.Combobox(goWindow, values = ["Default","Pin","Sphere","Rod","Toroid"]) 
+    b1GeoDropdown.place(x=30, y=120, height=26, width=100)
+    b1GeoDropdown.bind("<<ComboboxSelected>>",checkGlyphDropdowns)
+    b1GeoDropdown.insert(0,'Default')
+
+    b1TopoDropdown = ttk.Combobox(goWindow, values = ["Default","Pin","Sphere","Rod","Toroid"]) 
+    b1TopoDropdown.place(x=140, y=120, height=26, width=100)
+    b1TopoDropdown.bind("<<ComboboxSelected>>",checkGlyphDropdowns)
+    b1TopoDropdown.insert(0,'Default')
+
+
+
 #old features ported forwared
 def extraBSWindow():
     global entry_1
@@ -642,7 +712,7 @@ def extraBSWindow():
     global dropdown_y_displacementColumn
 
     bsWindow = Toplevel(window)
-    bsWindow.title("Custom List & Pubmed")
+    bsWindow.title("Custom List, Pubmed & CSV")
     bsWindow.geometry("655x655")
     bsWindow.configure(bg = "#1C375E")
     # bsWindow.wm_attributes("-topmost", True)
@@ -885,10 +955,6 @@ def csv_column_edit_window():
         # columnListBox.itemconfig(i,bg = "lime")
     
     yscrollbar.config(command=columnListBox.yview)
-
-
-
-
 
 def upload_url_list():
     global custom_url_searchlist
@@ -1373,9 +1439,9 @@ def main():
     sys.stdout = RedirectText(terminalScrollable)
 
     #the select geometry choice dropdown (combobox)
-    canvas.create_text(21,400, anchor="nw", text="Glyph Geometry", fill="#FFFFFF", font=("Inter", 15 * -1))
+    canvas.create_text(21,410, anchor="nw", text="Glyph Geometry", fill="#FFFFFF", font=("Inter", 15 * -1))
     geometryDropdown = ttk.Combobox(values = ["Sphere","Toroid","Cube","Octahedron"]) #plan to add cylinder
-    geometryDropdown.place(x=21, y=420, height=26, width=100)
+    geometryDropdown.place(x=21, y=430, height=26, width=100)
     geometryDropdown.bind("<<ComboboxSelected>>", change_glyph_geo_selection)
     geometryDropdown.insert(0,'Sphere')
 
@@ -1892,11 +1958,15 @@ def main():
     button_open_bs_window.place(x=720,y=103,height=38,width=70)
 
     #glyph pattern dropdown
-    canvas.create_text(130,400, anchor="nw", text="Glyph Pattern", fill="#FFFFFF", font=("Inter", 15 * -1))
+    canvas.create_text(130,410, anchor="nw", text="Glyph Pattern", fill="#FFFFFF", font=("Inter", 15 * -1))
     patternDropdown = ttk.Combobox(values = ["grid","arc","wordlist_axes"]) 
-    patternDropdown.place(x=130, y=420, height=26, width=100)
+    patternDropdown.place(x=130, y=430, height=26, width=100)
     patternDropdown.bind("<<ComboboxSelected>>", change_glyph_pattern_selection)
     patternDropdown.insert(0,'grid')
+
+    #Root options button
+    button_open_bs_window = Button(window, text="Glyph \n Options",command=extraGlyphOptions)
+    button_open_bs_window.place(x=310,y=480,height=38,width=70)
 
     #ROOT node scaling
     root_node_size_entry = Entry(window)
