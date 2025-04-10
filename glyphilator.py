@@ -889,7 +889,15 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
     geometrySelectionDict = {"Toroid":7,
                              "Sphere":3,
                              "Cube":1,
-                             "Octahedron":11}
+                             "Octahedron":11,
+                             "Rod":19,
+                             "Pin":16}
+    topologySelectionDict = {"Sphere":2,
+                             "Toroid":3,
+                             "Cylinder":4,
+                             "Pin":5,
+                             "Rod":6,
+                             "Spiral":14}
 
     scaleChoiceDict = {"wordlist":scaleFunc_ForWordlists,
                        "csv":scaleFunc_forCSV,
@@ -975,6 +983,10 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
         working_glyph.loc[working_glyph.index[0],['np_node_id','np_data_id','record_id']] = node_id_counter
         working_glyph.loc[working_glyph.index[0],'parent_id'] = 40 #the parent id for the root is always 0
 
+        #changing root node geometry & topology according to search_metadata
+        working_glyph.loc[working_glyph.index[0],'np_geometry_id'] = geometrySelectionDict[search_metadata["glyph_options"]["root_geometry"]]
+        working_glyph.loc[working_glyph.index[0],'np_topo_id'] = topologySelectionDict[search_metadata["glyph_options"]["root_topology"]]
+
         #change root node geometry to sphere if height != 0
         if sum(glyphHeights) != 0:
             working_glyph.loc[working_glyph.index[0],'np_geometry_id'] = geometrySelectionDict["Sphere"]
@@ -990,7 +1002,17 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
         working_glyph.loc[working_glyph.index[1],'parent_id'] = node_id_counter - 1 #parent id for layer 1 is root id. aka current id - 1
         node_id_layer2_toroid = node_id_counter #saving node id of layer 1 toroid to access in next for loop
         
-        
+        #changing branch 1 node geometry & topology according to search_metadata
+        working_glyph.loc[working_glyph.index[1],'np_geometry_id'] = geometrySelectionDict[search_metadata["glyph_options"]["b1_geometry"]]
+        working_glyph.loc[working_glyph.index[1],'np_topo_id'] = topologySelectionDict[search_metadata["glyph_options"]["b1_topology"]]
+
+        #Changing translate_y to 90 if branch 1 topology != Toroid, increasing size of branch 1
+        if search_metadata["glyph_options"]["b1_topology"] != "Toroid":
+            working_glyph.loc[working_glyph.index[1],'translate_y'] = 90 #topologySelectionDict[search_metadata["glyph_options"]["b1_topology"]]
+            
+            working_glyph[["scale_x","scale_y","scale_z"]] = working_glyph[["scale_x","scale_y","scale_z"]].astype(float,copy = False)
+            working_glyph.loc[working_glyph.index[1],["scale_x","scale_y","scale_z"]] = working_glyph.loc[working_glyph.index[1],["scale_x","scale_y","scale_z"]] * 3
+
 
         # print(flag_generating_key_glyph, "iteration = ",i)
         if flag_generating_key_glyph == False:

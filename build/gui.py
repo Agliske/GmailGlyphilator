@@ -83,7 +83,7 @@ search_metadata = {
                                             "rest_api_query":"Subject:Google Alert",
                                             "headless_browser": True,
                                             "geometrySelection": "Toroid",
-                                            "glyph_options":{"root_geometry":"default","root_topology":"default","b1_geometry":"default","b1_topology":"default"},
+                                            "glyph_options":{"root_geometry":"Pin","root_topology":"Pin","b1_geometry":"Toroid","b1_topology":"Toroid"},
                                             "wordlist_paths" : ["path/to/WL1.txt","path/to/WL2.txt","path/to/WL3.txt"],
                                             "search_fuzziness":0.6,
                                             "search_string": "sample string",
@@ -640,7 +640,7 @@ def extraGlyphOptions():
 
         selected_combobox = event.widget
         if selected_combobox == rootGeoDropdown:
-            print("rootgeodropdonw selected")
+            # print("rootgeodropdonw selected")
             rootTopoDropdown.delete(0,END)
             rootTopoDropdown.insert(0,rootGeoDropdown.get())
         if selected_combobox == b1GeoDropdown:
@@ -648,6 +648,10 @@ def extraGlyphOptions():
             b1TopoDropdown.delete(0,END)
             b1TopoDropdown.insert(0,rootGeoDropdown.get())
 
+        search_metadata["glyph_options"]["root_geometry"] = rootGeoDropdown.get()
+        search_metadata["glyph_options"]["root_topology"] = rootTopoDropdown.get()
+        search_metadata["glyph_options"]["b1_geometry"] = b1GeoDropdown.get()
+        search_metadata["glyph_options"]["b1_topology"] = b1TopoDropdown.get()
 
 
 
@@ -669,27 +673,27 @@ def extraGlyphOptions():
 
     #root geometry/topology dropdowns
     goCanvas.create_text(30,40, anchor="nw", text="Root Geometry | Root Topology", fill="#FFFFFF", font=("Inter", 15 * -1))
-    rootGeoDropdown = ttk.Combobox(goWindow, values = ["Default","Pin","Sphere","Rod","Toroid"]) 
+    rootGeoDropdown = ttk.Combobox(goWindow, values = ["Pin","Sphere","Rod","Toroid"]) 
     rootGeoDropdown.place(x=30, y=60, height=26, width=100)
     rootGeoDropdown.bind("<<ComboboxSelected>>",checkGlyphDropdowns)
-    rootGeoDropdown.insert(0,'Default')
+    rootGeoDropdown.insert(0,'Pin')
 
-    rootTopoDropdown = ttk.Combobox(goWindow, values = ["Default","Pin","Sphere","Rod","Toroid"]) 
+    rootTopoDropdown = ttk.Combobox(goWindow, values = ["Pin","Sphere","Cylinder","Rod","Toroid","Spiral"]) 
     rootTopoDropdown.place(x=140, y=60, height=26, width=100)
     rootTopoDropdown.bind("<<ComboboxSelected>>",checkGlyphDropdowns)
-    rootTopoDropdown.insert(0,'Default')
+    rootTopoDropdown.insert(0,'Pin')
 
     #Branch 1 geometry/topology dropdowns
-    goCanvas.create_text(30,100, anchor="nw", text="Root Geometry | Root Topology", fill="#FFFFFF", font=("Inter", 15 * -1))
-    b1GeoDropdown = ttk.Combobox(goWindow, values = ["Default","Pin","Sphere","Rod","Toroid"]) 
+    goCanvas.create_text(30,100, anchor="nw", text="Branch 1 Geometry | Branch 1 Topology", fill="#FFFFFF", font=("Inter", 15 * -1))
+    b1GeoDropdown = ttk.Combobox(goWindow, values = ["Pin","Sphere","Rod","Toroid"]) 
     b1GeoDropdown.place(x=30, y=120, height=26, width=100)
     b1GeoDropdown.bind("<<ComboboxSelected>>",checkGlyphDropdowns)
-    b1GeoDropdown.insert(0,'Default')
+    b1GeoDropdown.insert(0,'Toroid')
 
-    b1TopoDropdown = ttk.Combobox(goWindow, values = ["Default","Pin","Sphere","Rod","Toroid"]) 
+    b1TopoDropdown = ttk.Combobox(goWindow, values = ["Sphere","Cylinder","Rod","Toroid","Spiral"]) 
     b1TopoDropdown.place(x=140, y=120, height=26, width=100)
     b1TopoDropdown.bind("<<ComboboxSelected>>",checkGlyphDropdowns)
-    b1TopoDropdown.insert(0,'Default')
+    b1TopoDropdown.insert(0,'Toroid')
 
 
 
@@ -1308,6 +1312,7 @@ def dropdown_Selector_forCSV_clicked(event):
         search_metadata["csv_rootColorGradient"] = string
         dropdown_rootColorGradient.delete(0,END)
         dropdown_rootColorGradient.insert(0,string)
+
 #main
 def main():
     global calendar_window
