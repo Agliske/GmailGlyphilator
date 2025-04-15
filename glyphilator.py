@@ -923,6 +923,14 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
     num_rings = len(allGlyphData[0]) #check len of a single glyph list. for each index in the list we'll make a ring
     # print("num rings = ",num_rings)
     ring_angles = evenlySpacedAngles(num_rings)
+
+    if search_metadata["glyph_options"]["b1_topology"] != "Toroid":
+        print("not totoid")
+        ring_angles = evenlySpacedAngles(num_rings,180)
+        for i in range(0,len(ring_angles)):
+            ring_angles[i] = ring_angles[i] * -1
+            
+
     
     if search_metadata["glyph_pattern"] == "geospatial":
         
