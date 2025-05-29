@@ -127,7 +127,7 @@ Add run commands and examples you think users will find useful. Provide an optio
   ![Visualization Example](/readme_images/CSV_example_viz_notags.png)
   ![Visualization Example](/readme_images/CSV_example_viz_tags.png)
 
-  <details>
+  
     <summary><b>Geospatial CSV Glyphing</b></summary>
 
     ### Geospatial CSV Glyphing
@@ -149,7 +149,7 @@ Add run commands and examples you think users will find useful. Provide an optio
     ![Visualization Example](/readme_images/geo_example_notags.png)
     ![Visualization Example](/readme_images/geo_example_tags.png)
 
-  </details>
+  
 </details>
 
 <!-- ## Contributing to <project_name>
