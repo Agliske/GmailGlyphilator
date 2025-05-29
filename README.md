@@ -93,7 +93,7 @@ Add run commands and examples you think users will find useful. Provide an optio
 ![Visualization Example](/readme_images/general2345.png)
 
 
-* Advanced features:
+### Advanced features:
 
 <details>
   <summary><b>Loading Old Mediasets/Wordcounts</b></summary>
@@ -105,7 +105,52 @@ Add run commands and examples you think users will find useful. Provide an optio
 
 </details>
 
+<details>
+  <summary><b>CSV Data Glyphing</b></summary>
 
+  ### Loading CSV data  
+  1. Make sure that the data you're trying to glyph is exclusively numerical. Other than the first row and first column (if you want pre-made tags) the data should be either floats or integers. Each row in the dataset will be a glyph, with each column being a branch node. The ideal dataset structure is illustrated in the image below:
+  ![Visualization Example](/readme_images/CSV_data_structure.png)
+
+  2. CSV options can be found by pressing "Other Text Options" button on the main screen. Start by pressing "Upload CSV" and navigate to your CSV of interest. The program assumes that the first row and column are headers, and don't have data in them. If your first row or column has data, uncheck the box "first row header" or "first column header" depending on your use case.
+
+  3. The rest of the interface has dropdowns that allow users to change how glyphs are arranged. By default, they will be arranged in a grid, and they can be changed by using the "Glyph Pattern" dropdown in the main page. Of course, there are no wordlists in a CSV, so wordlist_axes is not a valid choice.
+
+  Otherwise, the X,Y,Z displacement column dropdowns can choose a column, and the glyph will move based upon that row's value compared to the rest of the dataset. Based on the example data above, say I want to order my cities in X based upon average temperature, and in Y by average rainfall (mm), and no Z displacement.
+
+  The root color can be changed based on the value of data. For example, If I want the color to change from red to blue in cities with high population, getting more blue with cities of lower population, I can make selections as shown in the images below:
+  ![Visualization Example](/readme_images/CSV_selection_columns.png)
+  
+
+  4. Press the "Collect CSV Data" button to finalize selections made above. Then Press the "create Viz" button on the main window to construct the visualization. Preview below.
+
+  ![Visualization Example](/readme_images/CSV_example_viz_notags.png)
+  ![Visualization Example](/readme_images/CSV_example_viz_tags.png)
+
+  <details>
+    <summary><b>Geospatial CSV Glyphing</b></summary>
+
+    ### Geospatial CSV Glyphing
+    1.  As with standard CSV Glyphing, the data needs to be all integers and floats, with the exception of the header row and column, if any. 
+
+    Note that The **latitude and longitude must be in their own columns,** as in the sample data below.
+    ![Visualization Example](/readme_images/CSV_data_structure.png)
+
+    2. If you plan on using Geospatial Glyph placement, all column dropdowns are available to you as with regular CSV glyphing, with the exception of X and Y Displacement. 
+
+    3. Next you need an API key from Mapbox. They need a credit card, but the free limit is 50,000 maps, so there is really no risk running out of free use. Once you have an API key, you may copy/paste it into the "Mapbox API Key" field. 
+
+    If you want your API key to autofill into the field on startup, place a file named "mapbox.txt" containing nothing but the api key in the "api_keys" folder in your Glyphilator installation.
+    ![Visualization Example](/readme_images/mapbox_api_install.png)
+
+    4. Select your column containing latitude/longitude in the CSV in the "latitude column" and "longitude column" dropdowns respectively. Make sure that X and Y displacement columns have "None" selected.
+
+    5. Press "Collect CSV Data" button, followed by "create Viz" button in main window.
+    ![Visualization Example](/readme_images/geo_example_notags.png)
+    ![Visualization Example](/readme_images/geo_example_tags.png)
+
+  </details>
+</details>
 
 <!-- ## Contributing to <project_name>
 <!--- If your README is long or you have some specific process or steps you want contributors to follow, consider creating a separate CONTRIBUTING.md file--->
