@@ -448,14 +448,12 @@ def generateGlyphInput_CSV(filepath_csv, search_metadata = {
 
     if latitudeColumnIndex != None:
         latitudeColumn = csv_array[:,latitudeColumnIndex]
-        # print("latitudeColumn = ", latitudeColumn)
         search_metadata["geo_coords"][0] = latitudeColumn.astype(float)
         
     if longitudeColumnIndex != None:
         longitudeColumn = csv_array[:,longitudeColumnIndex]
-        # print("longitudeColumn = ", longitudeColumn)
         search_metadata["geo_coords"][1] = longitudeColumn.astype(float)
-    # print("latitudes during collect csvData = ",latitudeColumn,"\nlongitudes during collectcsvdata = ",longitudeColumn)
+    
 
     #do deletions after data assignments
     # if flag_rowNameExists == True:csv_array = np.delete(csv_array,0,axis=1)
@@ -713,7 +711,6 @@ def generate_rootColors(nonScaledAllGlyphData_dict,search_metadata):
     
     return rootColors
 
-    
 def evenlySpacedAngles(N,objAngle = 360): #N: how many elements we want evenly spaced around 360deg object
     
     step = objAngle/N
@@ -906,10 +903,10 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
     
 
 
-    core_glyph_csv_path = os.path.join(cwd,"resources","glyph_header.csv")
-    working_glyph_row_path = os.path.join(cwd,"resources","glyph_layer_2_model_ring.csv")
-    first_two_element_of_glyph_path = os.path.join(cwd,"resources","glyph_root_and_layer_1.csv")
-    tag_file_path = os.path.join(cwd,"resources","tag_file_header.csv")
+    core_glyph_csv_path = os.path.join(cwd,"resources","standard_glyph","glyph_header.csv")
+    working_glyph_row_path = os.path.join(cwd,"resources","standard_glyph","glyph_layer_2_model_ring.csv")
+    first_two_element_of_glyph_path = os.path.join(cwd,"resources","standard_glyph","glyph_root_and_layer_1.csv")
+    tag_file_path = os.path.join(cwd,"resources","standard_glyph","tag_file_header.csv")
 
 
     antzfile = pd.read_csv(core_glyph_csv_path)
@@ -967,7 +964,7 @@ def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcou
     glyphHeights = generate_glyphHeights(nonScaledAllGlyphData_dict,search_metadata=search_metadata)
     
     if search_metadata["csv_rootColorColumn"] != None: 
-        print(search_metadata["csv_rootColorColumn"])
+        # print(search_metadata["csv_rootColorColumn"])
         rootColors = generate_rootColors(nonScaledAllGlyphData_dict=nonScaledAllGlyphData_dict,search_metadata=search_metadata)
 
     colors = chooseBasicColors(allGlyphData)

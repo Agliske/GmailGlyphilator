@@ -1,0 +1,45 @@
+﻿Memtransistor
+Neuromorphic Computing
+Memristor
+Transistor
+Synapse
+Neuron
+Neural Network
+Spiking Neural Network (SNN)
+Non-volatile Memory (NVM)
+Resistive Switching
+Gate-Tunability
+Two-Dimensional Materials
+Molybdenum Disulfide (MoS2)
+Ferroelectric Materials
+Van der Waals Heterojunctions
+Floating-Gate Memories
+Dual-Gated Devices
+Adaptive Learning
+Parallel Computing
+Low-Power Operation
+High-Frequency Operation
+Neural Plasticity
+Neural Coding
+Neural Dynamics
+Neural Prosthetics
+Neural Interfaces
+Neural Circuits
+Neural Computation
+Neural Modelling
+Neural Systems
+Neural Algorithms
+Neural Learning
+Neural Adaptation
+Neural Control
+Neural Integration
+Neural Communication
+Neural Synchronization
+Neural Encoding
+Neural Decoding
+Neural Processing
+Neural Information
+Neural Signals
+Neural Activity
+Neural Function
+Neural Mechanisms

@@ -1,0 +1,100 @@
+﻿Artificial Neuron
+Feedforward Neural Network (FNN)
+Convolutional Neural Network (CNN)
+Recurrent Neural Network (RNN)
+Long Short-Term Memory (LSTM)
+Gated Recurrent Unit (GRU)
+Multilayer Perceptron (MLP)
+Autoencoder
+Variational Autoencoder (VAE)
+Generative Adversarial Network (GAN)
+Deep Neural Network (DNN)
+Shallow Neural Network
+Radial Basis Function Network (RBFN)
+Hopfield Network
+Boltzmann Machine
+Restricted Boltzmann Machine (RBM)
+Neural Network Layer
+Input Layer
+Hidden Layer
+Output Layer
+Activation Function
+Sigmoid Activation
+ReLU (Rectified Linear Unit)
+Leaky ReLU
+Tanh Activation
+Softmax Activation
+Dropout Layer
+Normalization Layer
+Batch Normalization
+Layer Normalization
+Weight Initialization
+Bias Initialization
+Loss Function
+Mean Squared Error (MSE)
+Cross-Entropy Loss
+Optimization Algorithm
+Gradient Descent
+Stochastic Gradient Descent (SGD)
+Adam Optimizer
+Learning Rate
+Epoch
+Batch Size
+Backpropagation
+Forward Propagation
+Weight Sharing
+Parameter Tuning
+Regularization
+L1 Regularization
+L2 Regularization
+Early Stopping
+Overfitting
+Underfitting
+Hyperparameter Tuning
+Cross-Validation
+Data Augmentation
+Transfer Learning
+Fine-Tuning
+Feature Extraction
+Embedding Layer
+Attention Mechanism
+Self-Attention
+Transformer Architecture
+Residual Network (ResNet)
+Inception Network
+DenseNet
+EfficientNet
+MobileNet
+U-Net
+Capsule Network
+Graph Neural Network (GNN)
+Graph Convolutional Network (GCN)
+Temporal Convolutional Network (TCN)
+WaveNet
+Reinforcement Learning
+Q-Learning
+Deep Q-Network (DQN)
+Policy Gradient
+Actor-Critic Methods
+Neuroevolution
+Evolutionary Algorithms
+Genetic Algorithm
+Neural Architecture Search (NAS)
+Pruning
+Quantization
+Knowledge Distillation
+Model Compression
+Parallel Computing
+Distributed Training
+Cloud Computing
+Edge Computing
+IoT Integration
+Biological Neural Networks
+Spiking Neural Networks (SNNs)
+Neuromorphic Engineering
+Memristors
+Neuromorphic Hardware
+Event-Driven Processing
+Cognitive Computing
+Pattern Recognition
+Deep Learning Frameworks

@@ -99,7 +99,7 @@ search_metadata = {
                                             "uploaded_articledata_path":"None",
                                             "scale_method":"wordlist", #options ["wordlist","csv"] depending on what files are being processed
                                             "csv_path":"path/to/csv.csv",
-                                            "csv_headerFlags":[True,True,None,None],#csv_headerflags determines if the [first row, first column] of csv dataset are identifiers or tags as opposed to data
+                                            "csv_headerFlags":[True,True,None,None],#csv_headerflags determines if the [first row, first column, lat col index, long col index] of csv dataset are identifiers or tags as opposed to data 
                                             "csv_heightcolumn":-1,#-1 signifies no column, all glyphs on y plane
                                             "csv_rootColorColumn": None,
                                             "csv_xy_displacement":[None,None],
@@ -149,7 +149,7 @@ def list_txt_files_in_folder(filepath):
 
     list_txt_filepaths = []
     for file in files:
-        if file.endswith('.txt'):
+        if file.endswith('.txt') or file.endswith('.csv'):
             list_txt_filepaths.append(filepath + r"\\" + file)
     
     listNames = []
@@ -294,7 +294,7 @@ def create_viz():
 
     
 
-    #  collecting metadata related to search. 
+    #  collecting metadata related to search.
     # # Copying Wordlists into folder
     wordlist_destination = os.path.join(time_directory_path,"search_metadata","wordlists")
     os.makedirs(wordlist_destination,exist_ok=True) 
@@ -311,7 +311,6 @@ def create_viz():
             list_txt_filepaths.append(os.path.relpath(wordlist_abs_path,antz_base_path))
     
     #copying the custom url searchlist txt file into the wordlist destination folder, and setting search_metadata["search_string"] to point to the copied url
-    
     if search_metadata["uploaded_articledata_path"] != "wordcounts_thru_upload": #check to see if any data was uploaded by
         search_metadata["subject_string"] = newsAlertDropdown.get()
         search_metadata["wordlist_paths"] = list_txt_filepaths
@@ -319,11 +318,7 @@ def create_viz():
     latitudeColumnIndex = search_metadata["csv_headerFlags"][2]
     longitudeColumnIndex = search_metadata["csv_headerFlags"][3]
     
-    # search_metadata["custom_list_file_paths"] = list_custom_files_paths
-    # if custom_url_searchlist == None: search_metadata['search_string'] = [entry_1.get()] #THIS INFO WAS ASSIGNED WHEN SEARCH CONFIRM BUTTON CLIckEd AND when URL SEARCHLIST UPLOADED
-    # if custom_url_searchlist != None: search_metadata['search_string'] = ["Used URL Searchlist", url_searchlist_textbox.get()]
     search_metadata["geometrySelection"] = geometryDropdown.get()
-    # search_metadata["num_results_requested"] = num_results_requested
     search_metadata["scaling_range"] = (float(max_scale.get())/(6),float(max_scale.get())) #min scale is 1/6 the max scale
     try:
         search_metadata["csv_placementData"]["height_min"] = float(min_height_entry.get())
@@ -334,7 +329,6 @@ def create_viz():
     # print("added root node scaling, = ", search_metadata["root_scaling"])
 
 
-    # print('generating antz and tag file. \n Initializing parallel processing')
     antzfile,tagfile = constructBasicGlyphs(articleData=final_articleData,nonScaledAllGlyphData_dict=nonscaled_allGlyphData_dict,glyphDataWordcounts=glyphDataCounts, wordlists=final_wordlists,search_metadata=search_metadata)
     antzfile.to_csv(os.path.join(time_directory_path,'csv',"articleScraperOutput_np_node.csv"),index=False,encoding="utf-8")
     tagfile.to_csv(os.path.join(time_directory_path,'csv',"articleScraperOutput_np_tag.csv"),index=False,encoding="utf-8")
