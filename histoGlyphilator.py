@@ -3,6 +3,7 @@ import csv
 import os
 import glyphilator as gly
 import pandas as pd
+import matplotlib as mpl
 from glyphilator import scaleFunc_forCSV,generate_centered_grid
 pd.set_option("mode.copy_on_write", True)
 
@@ -75,7 +76,7 @@ def format_xyz_to_loc_dict(xy_list,height_list):
         loc_list.append(new_loc)
     return loc_list
 
-def generate_histoglyph_input(path_to_csvs,search_metadata = {"scaling_range": (0.0,2.5),
+def generate_histoglyph_input(path_to_csvs,search_metadata = {"scaling_range": (0.0,1.5),
                                                               "scaling_type":"minmax"}):
     """
     generate_histoglyph_input generates the necessary data structures to construct a hyper-histoglyph.
@@ -87,41 +88,7 @@ def generate_histoglyph_input(path_to_csvs,search_metadata = {"scaling_range": (
         List of list of list of float: all the data to make a histoglyph viz. If second level list has more than 1 element it creates 
         a hyper-histoglyph, which is a glyph of histo-glyphs
     """
-    #histoglyph_list = [[[1,2,3]], #creates 4 regular histoglyphs. generated from a single 3-column, 4 row CSV
-    #                   [[1,2,3]],
-    #                  [[1,2,3]],
-    #                  [[1,2,3]],
-    #                  ] 
 
-    #histoglyph_list = [[[1,2,3],[1,2,3]]] # this is one row of two 3-col csvs. creates a single hyper-histoglyph with 2 histoglyphs, 3 bars each
-
-    #histoglyph_list = [[[1,2,3],[1,2,3]], #this contains 4 hyper-histoglyphs. 2 histoglyphs, 3 cols each
-    #                   [[1,2,3],[1,2,3]],
-    #                   [[1,2,3],[1,2,3]],
-    #                   [[1,2,3],[1,2,3]]
-    #                  ]    
-
-    #collect list of CSV paths in chosen dir
-    #open each, verify number of rows is the same for each, throw error if not.
-    
-    #initialize histoglyph_list_scaled
-    #initialize histoglyph_list_unscaled
-    #append and empty list per row in the csvs in each
-
-    #initialize col_name_list = []
-    
-    
-    #for each csv path:
-
-        #open each CSV, save column names in a list of list of str (this will be our tags: column-name:Data)
-        #remove the first row(column names)
-
-        #in_dict = {"total": csv_array_scaled}
-        #csv_array_scaled, csv_array_unscaled = scaleFunc_forCSV()
-
-        # for each row in csv:
-
-            #append the data for that row to histoglyph_list[row].append(row_data_as_list)
     
     files = os.listdir(path_to_csvs)
     
@@ -134,14 +101,17 @@ def generate_histoglyph_input(path_to_csvs,search_metadata = {"scaling_range": (
     #open each file, verify that they have same num rows (also initialize histoglyph_list with empty lists = num rows)
     histoglyph_list_scaled = []
     histoglyph_list_unscaled = []
+    histoglyph_list_normalized = []
     numrows = 0
     for line in open(list_csv_filepaths[0]):
         numrows = numrows + 1
         histoglyph_list_unscaled.append([])
         histoglyph_list_scaled.append([])
+        histoglyph_list_normalized.append([])
 
     histoglyph_list_unscaled.pop(-1) #removing because my for loop included the header, which we won't use.
     histoglyph_list_scaled.pop(-1)
+    histoglyph_list_normalized.pop(-1)
 
     for i in range(0,len(list_csv_filepaths)):
         path = list_csv_filepaths[i]
@@ -164,17 +134,19 @@ def generate_histoglyph_input(path_to_csvs,search_metadata = {"scaling_range": (
         column_names_list.append(headers)
 
         data_in_dict = {"total":unscaled_data_array}
-        scaled_data_array, unscaled_data_array = scaleFunc_forCSV(data_in_dict,search_metadata)
+        scaled_data_array, unscaled_data_array, normalized_0_to1 = scaleFunc_forCSV(data_in_dict,search_metadata)
 
         for j in range(0,unscaled_data_array.shape[0]):
+            normalized_row = normalized_0_to1[j,:]
             unscaled_row = unscaled_data_array[j,:]
             scaled_row = scaled_data_array[j,:]
 
             histoglyph_list_scaled[j].append(scaled_row.tolist())
             histoglyph_list_unscaled[j].append(unscaled_row.tolist())
+            histoglyph_list_normalized[j].append(normalized_row.tolist())
 
 
-    return histoglyph_list_scaled,histoglyph_list_unscaled,column_names_list
+    return histoglyph_list_scaled,histoglyph_list_unscaled,histoglyph_list_normalized,column_names_list
 
 def apply_location_to_glyph(glyph, ind = 0, location_data = sample_loc_data):
     """
@@ -215,7 +187,7 @@ def apply_location_to_glyph(glyph, ind = 0, location_data = sample_loc_data):
 
     return glyph
 
-def generate_single_histoglyph(parent_id,last_used_id,glyph_data,tag_data, search_metadata = sample_search_metadata):
+def generate_single_histoglyph(parent_id,last_used_id,glyph_data,tag_data,colormap,normalized_data, search_metadata = sample_search_metadata):
     """
     generate_single_glyph generates a snippet of an antzfile pertaining to a single histoglyph. Assumes 
     the header is generated elsewhere.
@@ -225,6 +197,8 @@ def generate_single_histoglyph(parent_id,last_used_id,glyph_data,tag_data, searc
         last_used_id(int): the starting point to assign new node ids from
         glyph_data (list of float): the unscaled data that will size the elements of the glyph
         tag_data (list of str): the 
+        colormap(object): matplotlib colormap object
+        normalized_data(list of float): data scaled on 0-1 for color selection purposes
         search_metadata (dict): search_metadata config dictionary used by glyphilator.py, and gui.py
     """
     cwd = os.getcwd()
@@ -268,6 +242,12 @@ def generate_single_histoglyph(parent_id,last_used_id,glyph_data,tag_data, searc
         working_row['scale_z'] = working_row['scale_z'].astype(float)
         working_row.loc[working_row.index[0],'scale_z'] = glyph_data[i]
 
+        #add color based on matplotlib color choice:
+        rgba_list = colormap(normalized_data[i])
+        rgba_list = [int((i*255)) for i in rgba_list]
+        rgba_list = [float((i)) for i in rgba_list]
+        working_row.loc[working_row.index[0],["color_r","color_g","color_b"]] = rgba_list[0:3]
+
         #Appending row to glyph
         working_glyph = pd.concat([working_glyph,working_row])
     
@@ -278,30 +258,13 @@ def generate_single_histoglyph(parent_id,last_used_id,glyph_data,tag_data, searc
     
     return working_glyph, last_used_id
 
-
-
-
-
 def create_viz(csv_dir_path,output_dir_path,search_metadata = {"scaling_range": (0.0,2.5),
                                                               "scaling_type":"minmax"}):
 
-    cwd = os.getcwd()
-    core_glyph_csv_path = os.path.join(cwd,"resources","histo_glyph","glyph_header.csv")
-    working_glyph_row_path = os.path.join(cwd,"resources","histo_glyph","glyph_layer_2_model_ring.csv")
-    first_two_element_of_glyph_path = os.path.join(cwd,"resources","histo_glyph","glyph_root_and_layer_1.csv")
-    tag_file_path = os.path.join(cwd,"resources","histo_glyph","tag_file_header.csv")
-    
-    csv_dir_path = os.path.join(os.getcwd(),"examples","histoglyphilator","tiny_examples")
     output_node_file_path = os.path.join(output_dir_path,"node.csv")
-    #basic_glyph_data = [0.95, 0.65, 0.63, 0.55, 0.45]
-    #hyper_histoglyph_list = [[0.6,0.8,0.5,0.7],[0.3,0.2,0.8,0.2],[0.6,0.5,0.8,0.1]]
-
-    #pre-generating info for hyper-histoglyphs
-    
-    
 
     #pre-generating data/info for histoglyphs
-    histoglyph_list_scaled,histoglyph_list_unscaled,column_names_list = generate_histoglyph_input(csv_dir_path,search_metadata)
+    histoglyph_list_scaled,histoglyph_list_unscaled,histoglyph_list_normalized,column_names_list = generate_histoglyph_input(csv_dir_path,search_metadata)
     num_hyperhistoglyphs = len(histoglyph_list_scaled)
     num_histoglyphs_on_hyperhistoglyph = len(histoglyph_list_scaled[0])
 
@@ -311,14 +274,15 @@ def create_viz(csv_dir_path,output_dir_path,search_metadata = {"scaling_range": 
 
     angles_list = angle_spacing(num_histoglyphs_on_hyperhistoglyph) 
     angles_loc_dict_list = format_angles_to_loc_dict(angles_list)
+
+    colormap = mpl.colormaps['viridis'].resampled(99)
     
-
-
-
+    #starting csv file generation
     antzfile = pd.read_csv(os.path.join(os.getcwd(),"resources","histo_glyph","glyph_header.csv"))
 
     parent_id = 40 #np_node_id of the plane object is 40. We want to drop all of our things on the plane.
     last_used_id = 40 
+    plane_id = 40
 
     for i in range(0,num_hyperhistoglyphs):
 
@@ -328,7 +292,7 @@ def create_viz(csv_dir_path,output_dir_path,search_metadata = {"scaling_range": 
         pin_and_ring = apply_location_to_glyph(pin_and_ring,0,hyper_loc_dict_list[i])
 
         #change ids, parent ids of pin and ring to be appropriate
-        pin_and_ring.loc[pin_and_ring.index[0],["parent_id"]] = last_used_id #last used is currently the plane. likely need to save this id.
+        pin_and_ring.loc[pin_and_ring.index[0],["parent_id"]] = plane_id #last used is currently the plane. likely need to save this id.
         last_used_id = last_used_id + 1
         pin_and_ring.loc[pin_and_ring.index[0],['np_node_id','np_data_id','record_id']] = last_used_id
         pin_and_ring.loc[pin_and_ring.index[1],["parent_id"]] = last_used_id
@@ -339,7 +303,7 @@ def create_viz(csv_dir_path,output_dir_path,search_metadata = {"scaling_range": 
         antzfile = pd.concat([antzfile,pin_and_ring])
 
         for j in range(0,num_histoglyphs_on_hyperhistoglyph):
-            working_glyph,last_used_id = generate_single_histoglyph(parent_id,last_used_id,histoglyph_list_scaled[i][j],histoglyph_list_unscaled[i][j],search_metadata=search_metadata)
+            working_glyph,last_used_id = generate_single_histoglyph(parent_id,last_used_id,histoglyph_list_scaled[i][j],histoglyph_list_unscaled[i][j],colormap,histoglyph_list_normalized[i][j])
             working_glyph = apply_location_to_glyph(working_glyph,0,angles_loc_dict_list[j])
             antzfile = pd.concat([antzfile,working_glyph])
 

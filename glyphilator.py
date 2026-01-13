@@ -703,7 +703,7 @@ def generate_rootColors(nonScaledAllGlyphData_dict,search_metadata):
     max_val = max(columnArray)
     colorIndices = minIndex + (columnArray - min_val) * (maxIndex - minIndex) / (max_val - min_val)
 
-    #finally choosing the RGB tuple based upon the index that we calculated above.
+    #finally choosing the RGB list based upon the index that we calculated above.
     rootColors = []
     for i in range(0,len(columnData)):
         color = colorGradient[int(colorIndices[i])]
@@ -843,6 +843,7 @@ def scaleFunc_forCSV(nonScaledAllGlyphData_dict,search_metadata = {
                                             ): 
     unscaledData = nonScaledAllGlyphData_dict["total"]
     scaled_allGlyphData = deepcopy(unscaledData)
+    normalized_0_to_1 = deepcopy(unscaledData)
     # print("unscaled data at beginning = \n",unscaledData)
     for i in range(0,len(unscaledData[0])): #for each column in csv:
         columnData = []
@@ -855,14 +856,18 @@ def scaleFunc_forCSV(nonScaledAllGlyphData_dict,search_metadata = {
             min_target = search_metadata["scaling_range"][0]
             max_target = search_metadata["scaling_range"][1]
             column_array = array(columnData)
+            normalized_array = array(columnData)
+
             min_val = min(column_array)
             max_val = max(column_array)
             scaledColumn = min_target + (column_array - min_val) * (max_target - min_target) / (max_val - min_val)
+            normalizedColumn = 0 + (column_array - min_val) * (1 - 0) / (max_val - min_val)
         
         for j in range(0,len(unscaledData)):
             scaled_allGlyphData[j][i] = scaledColumn[j] #replacing the entry with the scaled version
+            normalized_0_to_1[j][i] = normalizedColumn[j]
     # print("unscaled data at end = \n",unscaledData)
-    return scaled_allGlyphData,unscaledData
+    return scaled_allGlyphData,unscaledData,normalized_0_to_1
 
 def constructBasicGlyphs(articleData,nonScaledAllGlyphData_dict,glyphDataWordcounts, wordlists, search_metadata = {
                                             "geometrySelection": "Toroid", 

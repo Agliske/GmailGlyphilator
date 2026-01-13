@@ -23,6 +23,7 @@ from numpy import concatenate, array, genfromtxt, savetxt
 from functools import partial
 import json
 from re import sub
+import matplotlib as mpl
 cwd = os.getcwd()
 
 DaveArticleScraperDir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -144,6 +145,8 @@ def button_click(button, button_image, button_selected_image):
     return None
 
 def list_txt_files_in_folder(filepath):
+    global dropdown_csvSelector
+    global search_metadata
     files = os.listdir(filepath)
     
 
@@ -155,8 +158,14 @@ def list_txt_files_in_folder(filepath):
     listNames = []
     for path in list_txt_filepaths:
         listNames.append(os.path.basename(path))
+    try:
+        dropdown_csvSelector["values"] = listNames
+        search_metadata["wordlist_paths"] = list_txt_filepaths
+    except: pass
 
     str_listNames = "\n".join(listNames)
+
+
     
     return str_listNames
 
@@ -728,8 +737,6 @@ def extraBSWindow():
     bsCanvas.create_text(30,10,text="Custom Searchlist",anchor="nw",fill="#FFFFFF",font=("Inter", 20 * -1))
     url_searchlist_textbox = Entry(bsWindow)
     url_searchlist_textbox.place(x=30,y=50,width=250,height=26)
-
-    
 
     button_upload_url_list = Button(bsWindow, text="Upload \n Searchlist", command=upload_url_list)
     button_upload_url_list.place(x=30, y=78, width=70, height=38)
@@ -1306,6 +1313,193 @@ def dropdown_Selector_forCSV_clicked(event):
         search_metadata["csv_rootColorGradient"] = string
         dropdown_rootColorGradient.delete(0,END)
         dropdown_rootColorGradient.insert(0,string)
+
+#histoglyph window
+def histoglyph_window():
+    global search_metadata
+    global current_wordlist_folder
+    global min_scale2
+    global max_scale2
+
+    def csv_color_assignment_window():
+        def csv_selector_dropdown_clicked(event):
+            global columnNames
+            global dropdown_csvSelector
+            global current_wordlist_folder
+            global columnListBox
+            
+            csv_filename = dropdown_csvSelector.get()
+            csv_filepath = os.path.join(current_wordlist_folder,csv_filename)
+            #read first row of csv
+            csv_array = genfromtxt(csv_filepath, delimiter=",",missing_values="",filling_values=0,skip_header=False,encoding="utf-8",dtype=str)
+
+
+            if search_metadata["csv_headerFlags"][0] == True:
+                if search_metadata["csv_headerFlags"][1] == True: #if the first column is not data, we dont want to include it in columnNames
+                    columnNames = csv_array[0,1:]
+                    
+                if search_metadata["csv_headerFlags"][1] == False:
+                    columnNames = csv_array[0,:]
+
+            columnListBox.delete(0,END)
+            for i in range(0, len(columnNames)):
+                columnListBox.insert(END,columnNames[i])                   
+                        
+
+        def csv_column_select_all():
+            global columnListBox
+
+            columnListBox.selection_set(0,END)
+        def csv_column_deselect_all():
+            global columnListBox
+
+            columnListBox.select_clear(0,END)
+        def confirm_csv_selection():
+            global search_metadata
+            global columnListBox
+            global dropdown_heightcolumnSelector
+            global dropdown_x_displacementColumn
+            global dropdown_y_displacementColumn
+            global dropdown_latitudeSelector
+            global dropdown_longitudeSelector
+            global dropdown_rootColorColumn
+            
+
+
+            select_indices = columnListBox.curselection()
+            
+            print("select indices before switch",select_indices)
+            selected_columnNames = []
+            select_indices = list(select_indices)
+            for i in select_indices:
+                selected_columnNames.append(columnListBox.get(i))
+            
+            for i in range(0,len(select_indices)):
+                select_indices[i] = select_indices[i] + 1
+            
+            select_indices = [0] + list(select_indices) #forcing the 1st column to be selected all the time
+            print("select indices after switch", select_indices)
+
+            dropdown_heightcolumnSelector["values"] = ["None"] + selected_columnNames
+            dropdown_x_displacementColumn["values"] = ["None"] + selected_columnNames
+            dropdown_y_displacementColumn["values"] = ["None"] + selected_columnNames
+            dropdown_latitudeSelector["values"] = ["None"] + selected_columnNames
+            dropdown_longitudeSelector["values"] = ["None"] + selected_columnNames
+            dropdown_rootColorColumn["values"] = ["None"] + selected_columnNames
+            
+            if "autosaved_data" in search_metadata["csv_path"]:
+                print("this is an autosaved path!")
+                csv_path = search_metadata["uploaded_articledata_path"] #so we use original path
+            else:
+                csv_path = search_metadata["csv_path"] #else this is an original csv path
+            csv_array = genfromtxt(csv_path, delimiter=",",missing_values="",filling_values=0,skip_header=False,encoding="utf-8",dtype=str)
+
+            modified_array = csv_array[:,select_indices]
+
+            #autosaving final_articledata to json
+            print("autosaving csv data")
+            folder_date = str(datetime.datetime.now().strftime('%Y-%m-%d'))
+            date_noDash = str(datetime.datetime.now().strftime('%Y%m%d'))
+        
+            current_time = datetime.datetime.now().strftime('%H%M%S')
+            invalid_chars = r'[<>:"/\\|?*]'
+
+            saved_artData_dir_name = folder_date + "T"+ current_time + "_" + search_metadata["subject_string"] + "_ "+ "rowcount=" + str(modified_array.shape[0])
+            saved_artData_dir_name = sub(invalid_chars,"-",saved_artData_dir_name)
+            
+            artData_directory_path = os.path.join(cwd,'autosaved_data', saved_artData_dir_name)
+
+            filename = sub(".csv","",search_metadata["subject_string"])
+            for name in selected_columnNames:
+                filename = filename + "_" + str(name)
+            filename = filename + ".csv"
+            artdata_json_path = os.path.join(artData_directory_path,filename)
+            os.makedirs(artData_directory_path, exist_ok=True)
+            savetxt(artdata_json_path,modified_array,delimiter=",",fmt="%s")
+            
+            search_metadata["uploaded_articledata_path"] = search_metadata["csv_path"] #storing original csv path in uploaded_articledata_path
+            search_metadata["csv_path"] = artdata_json_path
+            # search_metadata["uploaded_articledata_path"] = artData_directory_path
+            print("article data saved to directory:")
+            print(artData_directory_path)
+        
+        global dropdown_heightcolumnSelector
+        global columnListBox
+        global dropdown_csvSelector
+        global columnNames
+        
+        
+
+        
+        
+        
+
+        csv_window = Tk()
+
+        dropdown_csvSelector = ttk.Combobox(csv_window,values=[os.path.basename(path) for path in os.listdir(current_wordlist_folder)],width=30)
+        dropdown_csvSelector.pack(padx=10,pady=10)
+        dropdown_csvSelector.bind("<<ComboboxSelected>>", csv_selector_dropdown_clicked)
+        dropdown_csvSelector.insert(0,"None")
+
+        button_select_all = Button(csv_window,text="select all",command=csv_column_select_all)
+        button_select_all.pack(padx=10,pady=10)
+
+        button_deselect_all = Button(csv_window,text="Deselect all",command=csv_column_deselect_all)
+        button_deselect_all.pack(padx=10,pady=5)
+
+        yscrollbar = Scrollbar(csv_window)
+        yscrollbar.pack(side=RIGHT,fill=Y)
+
+        columnListBox = Listbox(csv_window,selectmode="extended",yscrollcommand=yscrollbar.set)
+        columnListBox.pack(padx=10,pady=10,expand=YES,fill="both")
+        yscrollbar.config(command=columnListBox.yview)
+
+        dropdown_colormapSelector = ttk.Combobox(csv_window,values=list(mpl.colormaps.keys()))
+        dropdown_colormapSelector.pack(padx = 10,pady=10)
+        dropdown_colormapSelector.insert("coolwarm")
+
+        button_apply_color_to_selection = Button(csv_window, text="Apply Color \n to Selection",command=confirm_csv_selection)
+        button_apply_color_to_selection.pack(padx=10,pady=10,side = "left")
+
+        button_apply_color_to_all = Button(csv_window, text="Apply Color \n to All",command=confirm_csv_selection)
+        button_apply_color_to_all.pack(padx=10,pady=10,side = 'left')
+
+
+
+    hgWindow = Toplevel(window)
+    hgWindow.title("Histoglyph Options")
+    hgWindow.geometry("700x300")
+    hgWindow.configure(bg="#1C375E")
+    hgCanvas = Canvas(
+        hgWindow,
+        bg = "#1C375E",
+        height = 655,
+        width = 655,
+        bd = 0,
+        highlightthickness = 0,
+        relief = "ridge"
+    )
+    hgCanvas.place(x=0,y=0)
+    
+    hgCanvas.create_text(21,10, anchor="nw", text="1) Upload CSVs to Wordlist", fill="#FFFFFF", font=("Inter", 15 * -1))
+    
+    #bar scaling - different than ring scaling for regular glyphs, but should still write to search_metadata['scaling_range'].
+    hgCanvas.create_text(21,35, anchor="nw", text="2) Glyph Scaling (Min Max)", fill="#FFFFFF", font=("Inter", 15 * -1))
+    min_scale2 = Entry(hgWindow)
+    min_scale2.place(x = 21, y = 60, height=26, width=35)
+    min_scale2.insert(0,"0.2")
+
+    max_scale2 = Entry(hgWindow)
+    max_scale2.place(x = 60, y = 60, height=26, width=35)
+    max_scale2.insert(0,"1")
+
+    hgCanvas.create_text(21,90, anchor="nw", text="3) Histoglyph Bar Colors", fill="#FFFFFF", font=("Inter", 15 * -1))
+    button_open_color_window = Button(hgWindow,text="Open \n Colors", command=csv_color_assignment_window)
+    button_open_color_window.place(x=21, y=100, width=70, height=38)
+
+    
+
+
 
 #main
 def main():
@@ -1971,6 +2165,10 @@ def main():
     root_node_size_entry = Entry(window)
     root_node_size_entry.place(x=270, y = 480, height=26, width=35)
     root_node_size_entry.insert(0,"0.2")
+
+    #histoglyph window button
+    button_open_histoglyph_window = Button(window,text="Histoglyph\nOptions",command=histoglyph_window)
+    button_open_histoglyph_window.place(x=720,y=145,height=38,width=70)
 
     window.resizable(False, False)
     window.mainloop()
