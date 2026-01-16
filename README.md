@@ -146,33 +146,15 @@ Add run commands and examples you think users will find useful. Provide an optio
   
 </details>
 
-<!-- ## Contributing to <project_name>
-<!--- If your README is long or you have some specific process or steps you want contributors to follow, consider creating a separate CONTRIBUTING.md file--->
-<!-- To contribute to <project_name>, follow these steps:
 
-1. Fork this repository.
-2. Create a branch: `git checkout -b <branch_name>`.
-3. Make your changes and commit them: `git commit -m '<commit_message>'`
-4. Push to the original branch: `git push origin <project_name>/<location>`
-5. Create the pull request.
+<details>
+  <summary><b>Hyper-Histoglyphilation</b></summary>
 
-Alternatively see the GitHub documentation on [creating a pull request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request). --> -->
-
-<!-- ## Contributors
-
-Thanks to the following people who have contributed to this project:
-
-* [@scottydocs](https://github.com/scottydocs) 📖
-* [@cainwatson](https://github.com/cainwatson) 🐛
-* [@calchuchesta](https://github.com/calchuchesta) 🐛
-
-You might want to consider using something like the [All Contributors](https://github.com/all-contributors/all-contributors) specification and its [emoji key](https://allcontributors.org/docs/en/emoji-key).
-
-## Contact
-
-If you want to contact me you can reach me at <your_email@address.com>.
-
-## License
-<!--- If you're not sure which open license to use see https://choosealicense.com/--->
-
-<!-- This project uses the following license: [<license_name>](<link>). --> -->
+  ### Hyper-Histoglyphilator  
+  ![Visualization Example](/readme_images/geo_example_tags.png)
+  1. Upload CSVs to a wordlist group on the main glyphilator.exe window. It is assumed there is a header row that contains all the column names. It is assumed that there is no row identifiers. In other words, the first column is assumed to be data.
+  2. Set the scaling of each bar on the histoglyphs. By default, the minimum is less than the maximum, so that small data corresponds to a small bar. The minimum can be a larger float than the maximum, which would result in large numbers in data being represented as small bars on the histogram.
+  3. Press the "Open Colors" button to open the colors window. Every bar of every histoglyph can be configured to have its own color gradient. First select the csv you want to apply colors to in the top dropdown (step 3.1). Next Select using shift + ctrl which columns of the csv should have a color applied to them (step 3.2). Select which color gradient to apply, chosen from the default [list of gradient options](https://matplotlib.org/stable/gallery/color/colormap_reference.html) from the Python Matplotlib library (step 3.3). Finally apply the color gradient to either the columns selected in step 3.2, or every column of every csv in the visualization, using the buttons at the bottom of the colors window (step 3.4)
+  4. Press the "Create Viz" button to generate the GaiaViz visualization. It may take a few seconds to a minute or two to complete based on the size of the dataset.
+  5. Press the "View in ANTZ" Button on the main GlyphSearch window to open your new vizualization.
+</details>
