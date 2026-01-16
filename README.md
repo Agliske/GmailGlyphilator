@@ -157,7 +157,7 @@ Add run commands and examples you think users will find useful. Provide an optio
   3. Press the "Open Colors" button to open the colors window. Every bar of every histoglyph can be configured to have its own color gradient. First select the csv you want to apply colors to in the top dropdown (step 3.1). Next Select using shift + ctrl which columns of the csv should have a color applied to them (step 3.2). Select which color gradient to apply, chosen from the default [list of gradient options](https://matplotlib.org/stable/gallery/color/colormap_reference.html) from the Python Matplotlib library (step 3.3). Finally apply the color gradient to either the columns selected in step 3.2, or every column of every csv in the visualization, using the buttons at the bottom of the colors window (step 3.4)
   4. Press the "Create Viz" button to generate the GaiaViz visualization. It may take a few seconds to a minute or two to complete based on the size of the dataset.
   5. Press the "View in ANTZ" Button on the main GlyphSearch window to open your new vizualization.
-  
-  ![Visualization Example](readme_images\hyper-histoglyphilator_screenshot.png)
+
+  ![Visualization Example](readme_images/hyper-histoglyphilator_screenshot.png)
   
 </details>
