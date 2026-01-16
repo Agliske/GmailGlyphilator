@@ -108,7 +108,8 @@ search_metadata = {
                                             "csv_placementData":{"height_min":0,"height_max":30},
                                             "geo_coords":[[0.1,0.11,0.111],[0.1,0.11,0.111]],  #list of list of latitudes and longitudes
                                             "api_keys":{"mapbox":"your_api_key"},
-                                            "histoglyph_bar_colors":[["viridis","viridis","viridis"],['magma','magma'],['coolwarm']] #list of list with elements = num csvs, with num strings = num columns per csv
+                                            "histoglyph_bar_colors":[["viridis","viridis","viridis"],['magma','magma'],['coolwarm']], #list of list with elements = num csvs, with num strings = num columns per csv
+                                            "histoglyph_csv_column_names":[["hw1","hw2","hw3"],["quiz1","quiz2","quiz3"],["exam1","exam2"]] #list of list of str containing column names for all CSVs
                                             } 
 ############################################################################################################
 # Definitions
@@ -163,9 +164,9 @@ def list_txt_files_in_folder(filepath):
     #update csv selection options in histoglyph colors window when changing wordlist foldder
     try:
         dropdown_csvSelector["values"] = listNames
-        search_metadata["wordlist_paths"] = list_txt_filepaths
     except: pass
     generate_colormap_list() #for search_metadata["histoglyph_bar_colors"]
+    search_metadata["wordlist_paths"] = list_txt_filepaths
 
     str_listNames = "\n".join(listNames)
 
@@ -1437,7 +1438,7 @@ def histoglyph_window():
         yscrollbar = Scrollbar(csv_window)
         yscrollbar.pack(side=RIGHT,fill=Y)
 
-        columnListBox = Listbox(csv_window,selectmode="extended",exportselection=False,yscrollcommand=yscrollbar.set)
+        columnListBox = Listbox(csv_window,selectmode="extended",exportselection=False,yscrollcommand=yscrollbar.set) 
         columnListBox.pack(padx=10,pady=10,expand=YES,fill="both")
         yscrollbar.config(command=columnListBox.yview)
 
@@ -1507,8 +1508,18 @@ def histoglyph_window():
                 wordlist_abs_path = wordlist_destination + r"\\" + file
                 list_txt_filepaths.append(os.path.relpath(wordlist_abs_path,antz_base_path))
         
-        
+        #filling datastructure with all column names of all csvs
+        histoglyph_csv_column_names = []
+        for i in range(0,len(search_metadata["wordlist_paths"])):
+            csv_filepath = search_metadata["wordlist_paths"][i]
+            csv_array = genfromtxt(csv_filepath, delimiter=",",missing_values="",filling_values=0,skip_header=False,encoding="utf-8",dtype=str)
+            columnNames = csv_array[0,:]
+            histoglyph_csv_column_names.append(columnNames)
+
+        search_metadata["histoglyph_csv_column_names"] = histoglyph_csv_column_names
         search_metadata["scaling_range"] = (float(min_scale2.get()),float(max_scale2.get()))
+        
+        
         output_path = os.path.join(time_directory_path, "csv")
         histoGlyphilator.create_viz(current_wordlist_folder,output_path,search_metadata)
         print('Viz Created')

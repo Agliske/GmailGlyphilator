@@ -210,13 +210,23 @@ def generate_single_histoglyph(parent_id,last_used_id,glyph_data,tag_data,csv_nu
     spacing_list = bar_spacing(len(glyph_data))
     
     working_glyph = pd.read_csv(first_two_element_of_glyph_path)
+    working_tagfile = pd.read_csv(tag_file_path)
     node_id_counter = last_used_id
-
+    working_root_tags = pd.read_csv(tag_file_path)
 
     #update node_id, parent_id, record_id for root node
     node_id_counter = node_id_counter + 1
     working_glyph.loc[working_glyph.index[0],['np_node_id','np_data_id','record_id']] = node_id_counter
     working_glyph.loc[working_glyph.index[0],'parent_id'] = parent_id #the parent id for the root is always 0
+
+    #building root node tags. Display the title of the article, and embed the article url to be interacted with
+    working_glyph.loc[working_glyph.index[0],'tag_mode'] = 0 #encoded int describes fontsize, color, etc of tag 65536033
+    working_root_tags.loc[working_root_tags.index[0],'np_tag_id'] = node_id_counter
+    working_root_tags.loc[working_root_tags.index[0],'record_id'] = node_id_counter #associates this tag with the node_id of the correct element
+    #adding text to root node tags. Display the title of the article, and embed the article url to be interacted with
+    working_root_tags.loc[working_root_tags.index[0],'title'] = None
+    working_root_tags['title'] = working_root_tags['title'].astype(str,copy=False)
+    working_root_tags.loc[working_root_tags.index[0],'title'] = os.path.basename(search_metadata["wordlist_paths"][csv_number])
 
     #update the node_id, parent_id, of layer 1 node (plane)
     node_id_counter = node_id_counter + 1
@@ -224,13 +234,21 @@ def generate_single_histoglyph(parent_id,last_used_id,glyph_data,tag_data,csv_nu
     working_glyph.loc[working_glyph.index[1],'parent_id'] = node_id_counter - 1 #parent id for layer 1 is root id. aka current id - 1
     node_id_plane = node_id_counter #saving node id of layer 1 toroid to access in next for loop
 
+    working_tagfile = pd.concat([working_tagfile,working_root_tags])
     #add a bar for every element in glyph_data list
     for i in range(0,len(glyph_data)):
-
+        
         working_row = pd.read_csv(working_glyph_row_path)
+        working_bar_tags = pd.read_csv(tag_file_path)
+
         node_id_counter = node_id_counter + 1
         working_row.loc[working_row.index[0],['np_node_id','np_data_id','record_id']] = node_id_counter
         working_row.loc[working_glyph.index[0],'parent_id'] = node_id_plane
+
+        working_row.loc[working_row.index[0],'tag_mode'] = 0 #encoded int describes fontsize, color, etc of tag 65536033
+        working_bar_tags.loc[working_bar_tags.index[0],'np_tag_id'] = node_id_counter
+        working_bar_tags.loc[working_bar_tags.index[0],'record_id'] = node_id_counter #associates this tag with the node_id of the correct element
+
 
         #place the bar correctly on plane
         working_row.loc[working_row.index[0],'translate_x'] = None
@@ -249,20 +267,29 @@ def generate_single_histoglyph(parent_id,last_used_id,glyph_data,tag_data,csv_nu
         rgba_list = [float((i)) for i in rgba_list]
         working_row.loc[working_row.index[0],["color_r","color_g","color_b"]] = rgba_list[0:3]
 
+        #change bar tag based on data
+        bar_string = search_metadata["histoglyph_csv_column_names"][csv_number][i] + ": "+str(tag_data[i])
+        working_bar_tags.loc[working_bar_tags.index[0],'title'] = None
+        working_bar_tags['title'] = working_bar_tags['title'].astype(str,copy=False)
+        working_bar_tags.loc[working_bar_tags.index[0],'title'] = bar_string
+
         #Appending row to glyph
         working_glyph = pd.concat([working_glyph,working_row])
+        working_tagfile = pd.concat([working_tagfile,working_bar_tags])
     
     #reset the index so I can properly find the rows i want later.
     working_glyph = working_glyph.reset_index(drop=True)
+    working_tagfile = working_tagfile.reset_index(drop=True)
     
     last_used_id = node_id_counter
     
-    return working_glyph, last_used_id
+    return working_glyph, last_used_id, working_tagfile
 
 def create_viz(csv_dir_path,output_dir_path,search_metadata = {"scaling_range": (0.0,2.5),
                                                               "scaling_type":"minmax"}):
 
     output_node_file_path = os.path.join(output_dir_path,"articleScraperOutput_np_node.csv")
+    output_tag_file_path = os.path.join(output_dir_path,"articleScraperOutput_np_tag.csv")
 
     #pre-generating data/info for histoglyphs
     histoglyph_list_scaled,histoglyph_list_unscaled,histoglyph_list_normalized,column_names_list = generate_histoglyph_input(csv_dir_path,search_metadata)
@@ -280,6 +307,7 @@ def create_viz(csv_dir_path,output_dir_path,search_metadata = {"scaling_range": 
     
     #starting csv file generation
     antzfile = pd.read_csv(os.path.join(os.getcwd(),"resources","histo_glyph","glyph_header.csv"))
+    tagfile = pd.read_csv(os.path.join(os.getcwd(),"resources","histo_glyph","tag_file_header.csv"))
 
     parent_id = 40 #np_node_id of the plane object is 40. We want to drop all of our things on the plane.
     last_used_id = 40 
@@ -304,11 +332,13 @@ def create_viz(csv_dir_path,output_dir_path,search_metadata = {"scaling_range": 
         antzfile = pd.concat([antzfile,pin_and_ring])
 
         for j in range(0,num_histoglyphs_on_hyperhistoglyph):
-            working_glyph,last_used_id = generate_single_histoglyph(parent_id,last_used_id,histoglyph_list_scaled[i][j],histoglyph_list_unscaled[i][j],j,histoglyph_list_normalized[i][j],search_metadata)
+            working_glyph,last_used_id,working_tagfile = generate_single_histoglyph(parent_id,last_used_id,histoglyph_list_scaled[i][j],histoglyph_list_unscaled[i][j],j,histoglyph_list_normalized[i][j],search_metadata)
             working_glyph = apply_location_to_glyph(working_glyph,0,angles_loc_dict_list[j])
+            tagfile = pd.concat([tagfile,working_tagfile])
             antzfile = pd.concat([antzfile,working_glyph])
 
     antzfile.to_csv(output_node_file_path,index=False,encoding="utf-8")
+    tagfile.to_csv(output_tag_file_path,index=False,encoding="utf-8")
 
 
 
