@@ -151,7 +151,7 @@ Add run commands and examples you think users will find useful. Provide an optio
   <summary><b>Hyper-Histoglyphilation</b></summary>
 
   ### Hyper-Histoglyphilator  
-  ![Visualization Example](/readme_images/geo_example_tags.png)
+  ![Visualization Example](/readme_images/Histoglyphilator_steps.png)
   1. Upload CSVs to a wordlist group on the main glyphilator.exe window. It is assumed there is a header row that contains all the column names. It is assumed that there is no row identifiers. In other words, the first column is assumed to be data.
   2. Set the scaling of each bar on the histoglyphs. By default, the minimum is less than the maximum, so that small data corresponds to a small bar. The minimum can be a larger float than the maximum, which would result in large numbers in data being represented as small bars on the histogram.
   3. Press the "Open Colors" button to open the colors window. Every bar of every histoglyph can be configured to have its own color gradient. First select the csv you want to apply colors to in the top dropdown (step 3.1). Next Select using shift + ctrl which columns of the csv should have a color applied to them (step 3.2). Select which color gradient to apply, chosen from the default [list of gradient options](https://matplotlib.org/stable/gallery/color/colormap_reference.html) from the Python Matplotlib library (step 3.3). Finally apply the color gradient to either the columns selected in step 3.2, or every column of every csv in the visualization, using the buttons at the bottom of the colors window (step 3.4)
