@@ -42,6 +42,7 @@ from paragraphParser import articleParse,txtFileParse
 # from asyncPubmedFetcher import pubmedResultsAsync
 import gmailFetcher
 from mapFetcher_mapbox import fetchMapImage,saveMap
+import histoGlyphilator
 
 
 
@@ -106,7 +107,8 @@ search_metadata = {
                                             "csv_xy_displacement":[None,None],
                                             "csv_placementData":{"height_min":0,"height_max":30},
                                             "geo_coords":[[0.1,0.11,0.111],[0.1,0.11,0.111]],  #list of list of latitudes and longitudes
-                                            "api_keys":{"mapbox":"your_api_key"}
+                                            "api_keys":{"mapbox":"your_api_key"},
+                                            "histoglyph_bar_colors":[["viridis","viridis","viridis"],['magma','magma'],['coolwarm']] #list of list with elements = num csvs, with num strings = num columns per csv
                                             } 
 ############################################################################################################
 # Definitions
@@ -158,10 +160,12 @@ def list_txt_files_in_folder(filepath):
     listNames = []
     for path in list_txt_filepaths:
         listNames.append(os.path.basename(path))
+    #update csv selection options in histoglyph colors window when changing wordlist foldder
     try:
         dropdown_csvSelector["values"] = listNames
         search_metadata["wordlist_paths"] = list_txt_filepaths
     except: pass
+    generate_colormap_list() #for search_metadata["histoglyph_bar_colors"]
 
     str_listNames = "\n".join(listNames)
 
@@ -274,7 +278,7 @@ def create_viz():
     
     date_directory_path = os.path.join(cwd,'antz','antz','User','Prototypes', folder_date)
    
-     #making the date directory in antz/user/prototypes
+    #making the date directory in antz/user/prototypes
     try:
         os.mkdir(date_directory_path)
     except OSError:
@@ -1315,6 +1319,33 @@ def dropdown_Selector_forCSV_clicked(event):
         dropdown_rootColorGradient.insert(0,string)
 
 #histoglyph window
+def generate_colormap_list():
+    global search_metadata
+    global current_wordlist_folder
+    global dropdown_csvSelector
+
+    
+    file_list = os.listdir(current_wordlist_folder)
+    csv_list = []
+    for filepath in file_list:
+        if filepath.endswith('.csv'):
+            csv_list.append(os.path.join(current_wordlist_folder,filepath))
+        else:
+            continue
+
+    histoglyph_bar_colors = []
+    for csv_filepath in csv_list:
+        colors = []
+        # print(csv_filepath)
+        csv_array = genfromtxt(csv_filepath, delimiter=",",missing_values="",filling_values=0,skip_header=False,encoding="utf-8",dtype=str)
+        columnNames = csv_array[0,:]
+
+        for i in range(0,len(columnNames)):
+            colors.append('coolwarm')
+        histoglyph_bar_colors.append(colors)
+    
+    search_metadata["histoglyph_bar_colors"] = histoglyph_bar_colors
+
 def histoglyph_window():
     global search_metadata
     global current_wordlist_folder
@@ -1333,19 +1364,17 @@ def histoglyph_window():
             #read first row of csv
             csv_array = genfromtxt(csv_filepath, delimiter=",",missing_values="",filling_values=0,skip_header=False,encoding="utf-8",dtype=str)
 
-
-            if search_metadata["csv_headerFlags"][0] == True:
-                if search_metadata["csv_headerFlags"][1] == True: #if the first column is not data, we dont want to include it in columnNames
-                    columnNames = csv_array[0,1:]
+            columnNames = csv_array[0,:]
+            # if search_metadata["csv_headerFlags"][0] == True:
+            #     if search_metadata["csv_headerFlags"][1] == True: #if the first column is not data, we dont want to include it in columnNames
+            #         columnNames = csv_array[0,1:]
                     
-                if search_metadata["csv_headerFlags"][1] == False:
-                    columnNames = csv_array[0,:]
+            #     if search_metadata["csv_headerFlags"][1] == False:
+            #         columnNames = csv_array[0,:]
 
             columnListBox.delete(0,END)
             for i in range(0, len(columnNames)):
                 columnListBox.insert(END,columnNames[i])                   
-                        
-
         def csv_column_select_all():
             global columnListBox
 
@@ -1354,84 +1383,42 @@ def histoglyph_window():
             global columnListBox
 
             columnListBox.select_clear(0,END)
-        def confirm_csv_selection():
+        def button_apply_color_to_selection_clicked():
+            global dropdown_colormapSelector
+            global dropdown_csvSelector
             global search_metadata
             global columnListBox
-            global dropdown_heightcolumnSelector
-            global dropdown_x_displacementColumn
-            global dropdown_y_displacementColumn
-            global dropdown_latitudeSelector
-            global dropdown_longitudeSelector
-            global dropdown_rootColorColumn
-            
 
+            selected_colormap_key = dropdown_colormapSelector.get()
 
-            select_indices = columnListBox.curselection()
+            current_csv_index = dropdown_csvSelector.current()
+            #print("current_csv_index = ",current_csv_index)
+            select_indices = list(columnListBox.curselection())
             
-            print("select indices before switch",select_indices)
-            selected_columnNames = []
-            select_indices = list(select_indices)
-            for i in select_indices:
-                selected_columnNames.append(columnListBox.get(i))
-            
-            for i in range(0,len(select_indices)):
-                select_indices[i] = select_indices[i] + 1
-            
-            select_indices = [0] + list(select_indices) #forcing the 1st column to be selected all the time
-            print("select indices after switch", select_indices)
-
-            dropdown_heightcolumnSelector["values"] = ["None"] + selected_columnNames
-            dropdown_x_displacementColumn["values"] = ["None"] + selected_columnNames
-            dropdown_y_displacementColumn["values"] = ["None"] + selected_columnNames
-            dropdown_latitudeSelector["values"] = ["None"] + selected_columnNames
-            dropdown_longitudeSelector["values"] = ["None"] + selected_columnNames
-            dropdown_rootColorColumn["values"] = ["None"] + selected_columnNames
-            
-            if "autosaved_data" in search_metadata["csv_path"]:
-                print("this is an autosaved path!")
-                csv_path = search_metadata["uploaded_articledata_path"] #so we use original path
-            else:
-                csv_path = search_metadata["csv_path"] #else this is an original csv path
-            csv_array = genfromtxt(csv_path, delimiter=",",missing_values="",filling_values=0,skip_header=False,encoding="utf-8",dtype=str)
-
-            modified_array = csv_array[:,select_indices]
-
-            #autosaving final_articledata to json
-            print("autosaving csv data")
-            folder_date = str(datetime.datetime.now().strftime('%Y-%m-%d'))
-            date_noDash = str(datetime.datetime.now().strftime('%Y%m%d'))
         
-            current_time = datetime.datetime.now().strftime('%H%M%S')
-            invalid_chars = r'[<>:"/\\|?*]'
-
-            saved_artData_dir_name = folder_date + "T"+ current_time + "_" + search_metadata["subject_string"] + "_ "+ "rowcount=" + str(modified_array.shape[0])
-            saved_artData_dir_name = sub(invalid_chars,"-",saved_artData_dir_name)
+            #print("select indices before switch",select_indices)
+            for ind in select_indices:
+                search_metadata["histoglyph_bar_colors"][current_csv_index][ind] = selected_colormap_key
+            # selected_columnNames = []
+            # select_indices = list(select_indices)
+            # print("colormaps = ",search_metadata["histoglyph_bar_colors"])
+        def button_apply_color_to_all_clicked():
+            global search_metadata
+            global dropdown_colormapSelector
+            selected_colormap_key = dropdown_colormapSelector.get()
+            for i in range(0,len(search_metadata["histoglyph_bar_colors"])):
+                for j in range(0,len(search_metadata["histoglyph_bar_colors"][i])):
+                    search_metadata["histoglyph_bar_colors"][i][j] = selected_colormap_key
             
-            artData_directory_path = os.path.join(cwd,'autosaved_data', saved_artData_dir_name)
+            # print(search_metadata["histoglyph_bar_colors"])
 
-            filename = sub(".csv","",search_metadata["subject_string"])
-            for name in selected_columnNames:
-                filename = filename + "_" + str(name)
-            filename = filename + ".csv"
-            artdata_json_path = os.path.join(artData_directory_path,filename)
-            os.makedirs(artData_directory_path, exist_ok=True)
-            savetxt(artdata_json_path,modified_array,delimiter=",",fmt="%s")
             
-            search_metadata["uploaded_articledata_path"] = search_metadata["csv_path"] #storing original csv path in uploaded_articledata_path
-            search_metadata["csv_path"] = artdata_json_path
-            # search_metadata["uploaded_articledata_path"] = artData_directory_path
-            print("article data saved to directory:")
-            print(artData_directory_path)
         
         global dropdown_heightcolumnSelector
         global columnListBox
         global dropdown_csvSelector
         global columnNames
-        
-        
-
-        
-        
+        global dropdown_colormapSelector
         
 
         csv_window = Tk()
@@ -1450,19 +1437,81 @@ def histoglyph_window():
         yscrollbar = Scrollbar(csv_window)
         yscrollbar.pack(side=RIGHT,fill=Y)
 
-        columnListBox = Listbox(csv_window,selectmode="extended",yscrollcommand=yscrollbar.set)
+        columnListBox = Listbox(csv_window,selectmode="extended",exportselection=False,yscrollcommand=yscrollbar.set)
         columnListBox.pack(padx=10,pady=10,expand=YES,fill="both")
         yscrollbar.config(command=columnListBox.yview)
 
         dropdown_colormapSelector = ttk.Combobox(csv_window,values=list(mpl.colormaps.keys()))
         dropdown_colormapSelector.pack(padx = 10,pady=10)
-        dropdown_colormapSelector.insert("coolwarm")
+        dropdown_colormapSelector.insert(0,"coolwarm")
 
-        button_apply_color_to_selection = Button(csv_window, text="Apply Color \n to Selection",command=confirm_csv_selection)
+        button_apply_color_to_selection = Button(csv_window, text="Apply Color \n to Selection",command=button_apply_color_to_selection_clicked)
         button_apply_color_to_selection.pack(padx=10,pady=10,side = "left")
 
-        button_apply_color_to_all = Button(csv_window, text="Apply Color \n to All",command=confirm_csv_selection)
+        button_apply_color_to_all = Button(csv_window, text="Apply Color \n to All",command=button_apply_color_to_all_clicked)
         button_apply_color_to_all.pack(padx=10,pady=10,side = 'left')
+
+    def button_create_viz_clicked():
+        print("Creating Glyphs")
+        # print("glyphDataCounts = ", glyphDataCounts)
+            #create a new directory each time the button is pressed, storing the new viz
+        folder_date = str(datetime.datetime.now().strftime('%Y-%m-%d'))
+        date_noDash = str(datetime.datetime.now().strftime('%Y%m%d'))
+    
+        current_time = datetime.datetime.now().strftime('%H%M%S')
+        
+        date_directory_path = os.path.join(cwd,'antz','antz','User','Prototypes', folder_date)
+    
+        #making the date directory in antz/user/prototypes
+        try:
+            os.mkdir(date_directory_path)
+        except OSError:
+            pass
+        time_directory_name = "proto-" + date_noDash + "T" + current_time
+        time_directory_path = os.path.join(date_directory_path,time_directory_name)
+        
+        #saving the path of where we're saving stuff to access while we're generating tags
+        search_metadata["protos_save_path"] = time_directory_path
+
+        #making the time directory
+        os.mkdir(time_directory_path)
+        directory1 = pathlib.Path(os.path.join(cwd,"antz","antz", "User", "Prototypes", "0_DO_NOT_DELETE", "articleScraperOutput"))
+
+        for file in directory1.rglob("*"):
+
+            destination = time_directory_path / file.relative_to(directory1)
+
+            if file.is_file():
+                # Ensure parent directory exists in destination, then copy the file
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy(file, destination)
+            elif file.is_dir():
+                # Ensure the directory exists in the destination
+                destination.mkdir(parents=True, exist_ok=True)
+
+        
+
+        #  collecting metadata related to search.
+        # # Copying Wordlists into folder
+        wordlist_destination = os.path.join(time_directory_path,"search_metadata","wordlists")
+        os.makedirs(wordlist_destination,exist_ok=True) 
+        for file in pathlib.Path(current_wordlist_folder).rglob("*"):
+            shutil.copy(file,wordlist_destination)
+
+        antz_base_path = os.path.join(cwd, "antz", "antz")
+
+        wordlists = os.listdir(current_wordlist_folder) # i need to copy the paths this way because thats how i make the wordlists in glyphilator function. Dont wanna risk pathlib putting wordlists out of order
+        list_txt_filepaths = []
+        for file in wordlists:
+            if file.endswith('.csv'):
+                wordlist_abs_path = wordlist_destination + r"\\" + file
+                list_txt_filepaths.append(os.path.relpath(wordlist_abs_path,antz_base_path))
+        
+        
+        search_metadata["scaling_range"] = (float(min_scale2.get()),float(max_scale2.get()))
+        output_path = os.path.join(time_directory_path, "csv")
+        histoGlyphilator.create_viz(current_wordlist_folder,output_path,search_metadata)
+        print('Viz Created')
 
 
 
@@ -1487,15 +1536,19 @@ def histoglyph_window():
     hgCanvas.create_text(21,35, anchor="nw", text="2) Glyph Scaling (Min Max)", fill="#FFFFFF", font=("Inter", 15 * -1))
     min_scale2 = Entry(hgWindow)
     min_scale2.place(x = 21, y = 60, height=26, width=35)
-    min_scale2.insert(0,"0.2")
+    min_scale2.insert(0,"0.1")
 
     max_scale2 = Entry(hgWindow)
     max_scale2.place(x = 60, y = 60, height=26, width=35)
-    max_scale2.insert(0,"1")
+    max_scale2.insert(0,"0.8")
 
     hgCanvas.create_text(21,90, anchor="nw", text="3) Histoglyph Bar Colors", fill="#FFFFFF", font=("Inter", 15 * -1))
     button_open_color_window = Button(hgWindow,text="Open \n Colors", command=csv_color_assignment_window)
-    button_open_color_window.place(x=21, y=100, width=70, height=38)
+    button_open_color_window.place(x=21, y=115, width=70, height=38)
+
+    hgCanvas.create_text(21,160, anchor="nw", text="4) Create Viz", fill="#FFFFFF", font=("Inter", 15 * -1))
+    button_create_viz = Button(hgWindow,text="Create \n Viz", command=button_create_viz_clicked)
+    button_create_viz.place(x=21, y=180, width=70, height=38)
 
     
 

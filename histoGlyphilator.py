@@ -187,7 +187,7 @@ def apply_location_to_glyph(glyph, ind = 0, location_data = sample_loc_data):
 
     return glyph
 
-def generate_single_histoglyph(parent_id,last_used_id,glyph_data,tag_data,colormap,normalized_data, search_metadata = sample_search_metadata):
+def generate_single_histoglyph(parent_id,last_used_id,glyph_data,tag_data,csv_number,normalized_data, search_metadata = sample_search_metadata):
     """
     generate_single_glyph generates a snippet of an antzfile pertaining to a single histoglyph. Assumes 
     the header is generated elsewhere.
@@ -197,7 +197,7 @@ def generate_single_histoglyph(parent_id,last_used_id,glyph_data,tag_data,colorm
         last_used_id(int): the starting point to assign new node ids from
         glyph_data (list of float): the unscaled data that will size the elements of the glyph
         tag_data (list of str): the 
-        colormap(object): matplotlib colormap object
+        csv_number(int): what csv in the list we're looking at 
         normalized_data(list of float): data scaled on 0-1 for color selection purposes
         search_metadata (dict): search_metadata config dictionary used by glyphilator.py, and gui.py
     """
@@ -243,6 +243,7 @@ def generate_single_histoglyph(parent_id,last_used_id,glyph_data,tag_data,colorm
         working_row.loc[working_row.index[0],'scale_z'] = glyph_data[i]
 
         #add color based on matplotlib color choice:
+        colormap = mpl.colormaps[search_metadata["histoglyph_bar_colors"][csv_number][i]]
         rgba_list = colormap(normalized_data[i])
         rgba_list = [int((i*255)) for i in rgba_list]
         rgba_list = [float((i)) for i in rgba_list]
@@ -261,7 +262,7 @@ def generate_single_histoglyph(parent_id,last_used_id,glyph_data,tag_data,colorm
 def create_viz(csv_dir_path,output_dir_path,search_metadata = {"scaling_range": (0.0,2.5),
                                                               "scaling_type":"minmax"}):
 
-    output_node_file_path = os.path.join(output_dir_path,"node.csv")
+    output_node_file_path = os.path.join(output_dir_path,"articleScraperOutput_np_node.csv")
 
     #pre-generating data/info for histoglyphs
     histoglyph_list_scaled,histoglyph_list_unscaled,histoglyph_list_normalized,column_names_list = generate_histoglyph_input(csv_dir_path,search_metadata)
@@ -303,7 +304,7 @@ def create_viz(csv_dir_path,output_dir_path,search_metadata = {"scaling_range": 
         antzfile = pd.concat([antzfile,pin_and_ring])
 
         for j in range(0,num_histoglyphs_on_hyperhistoglyph):
-            working_glyph,last_used_id = generate_single_histoglyph(parent_id,last_used_id,histoglyph_list_scaled[i][j],histoglyph_list_unscaled[i][j],colormap,histoglyph_list_normalized[i][j])
+            working_glyph,last_used_id = generate_single_histoglyph(parent_id,last_used_id,histoglyph_list_scaled[i][j],histoglyph_list_unscaled[i][j],j,histoglyph_list_normalized[i][j],search_metadata)
             working_glyph = apply_location_to_glyph(working_glyph,0,angles_loc_dict_list[j])
             antzfile = pd.concat([antzfile,working_glyph])
 

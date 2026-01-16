@@ -4,7 +4,8 @@ import os
 import pandas as pd
 
 search_metadata = {"scaling_range": (0.1,0.7),
-                    "scaling_type":"minmax"}
+                    "scaling_type":"minmax",
+                    "histoglyph_bar_colors":[['Reds','Oranges'],['Reds','Oranges','Greens','Blues']]}
 
 csv_dir_path = os.path.join(os.getcwd(),"examples","histoglyphilator","tiny_examples")
 output_dir_path = os.path.join(os.getcwd(),"antz","antz","User","Prototypes","example")
