@@ -109,7 +109,8 @@ search_metadata = {
                                             "geo_coords":[[0.1,0.11,0.111],[0.1,0.11,0.111]],  #list of list of latitudes and longitudes
                                             "api_keys":{"mapbox":"your_api_key"},
                                             "histoglyph_bar_colors":[["viridis","viridis","viridis"],['magma','magma'],['coolwarm']], #list of list with elements = num csvs, with num strings = num columns per csv
-                                            "histoglyph_csv_column_names":[["hw1","hw2","hw3"],["quiz1","quiz2","quiz3"],["exam1","exam2"]] #list of list of str containing column names for all CSVs
+                                            "histoglyph_csv_column_names":[["hw1","hw2","hw3"],["quiz1","quiz2","quiz3"],["exam1","exam2"]], #list of list of str containing column names for all CSVs
+                                            "histoglyph_root_tag_strings":["tag_1","tag2","tag3"]
                                             } 
 ############################################################################################################
 # Definitions
@@ -1350,6 +1351,7 @@ def generate_colormap_list():
 def histoglyph_window():
     global search_metadata
     global current_wordlist_folder
+    global root_tag_csv_path_entry
     global min_scale2
     global max_scale2
 
@@ -1524,6 +1526,30 @@ def histoglyph_window():
         histoGlyphilator.create_viz(current_wordlist_folder,output_path,search_metadata)
         print('Viz Created')
 
+    def upload_root_tag_csv_clicked():
+        global search_metadata
+        global root_tag_csv_path_entry
+
+        csv_filepath = filedialog.askopenfilename()
+        root_tag_csv_path_entry.delete(0,END)
+        root_tag_csv_path_entry.insert(0,str(os.path.basename(csv_filepath)))
+
+        root_tag_str_list = []
+        with open(csv_filepath,'r') as file:
+            header_row = next(file).strip()
+            for row in file:
+                tag_string = str(header_row + ": " + row.split(',')[0])
+                root_tag_str_list.append(tag_string)
+        
+        root_tag_str_list.append("No header on CSV uploaded. Please upload tag csv with header")
+        search_metadata["histoglyph_root_tag_strings"] = root_tag_str_list
+                
+                
+
+
+        
+        
+
 
 
     hgWindow = Toplevel(window)
@@ -1543,23 +1569,28 @@ def histoglyph_window():
     
     hgCanvas.create_text(21,10, anchor="nw", text="1) Upload CSVs to Wordlist", fill="#FFFFFF", font=("Inter", 15 * -1))
     
+    button_upload_root_tags = Button(hgWindow,text="Upload\nRoot Tags", command=upload_root_tag_csv_clicked)
+    button_upload_root_tags.place(x=21, y=10+20, width=70, height=38)
+    root_tag_csv_path_entry = Entry(hgWindow)
+    root_tag_csv_path_entry.place(x=21+80, y=10+26, width=200, height=26)
+
     #bar scaling - different than ring scaling for regular glyphs, but should still write to search_metadata['scaling_range'].
-    hgCanvas.create_text(21,35, anchor="nw", text="2) Glyph Scaling (Min Max)", fill="#FFFFFF", font=("Inter", 15 * -1))
+    hgCanvas.create_text(21,35+40, anchor="nw", text="2) Glyph Scaling (Min Max)", fill="#FFFFFF", font=("Inter", 15 * -1))
     min_scale2 = Entry(hgWindow)
-    min_scale2.place(x = 21, y = 60, height=26, width=35)
+    min_scale2.place(x = 21, y = 60+40, height=26, width=35)
     min_scale2.insert(0,"0.1")
 
     max_scale2 = Entry(hgWindow)
-    max_scale2.place(x = 60, y = 60, height=26, width=35)
+    max_scale2.place(x = 60, y = 60+40, height=26, width=35)
     max_scale2.insert(0,"0.8")
 
-    hgCanvas.create_text(21,90, anchor="nw", text="3) Histoglyph Bar Colors", fill="#FFFFFF", font=("Inter", 15 * -1))
+    hgCanvas.create_text(21,90+40, anchor="nw", text="3) Histoglyph Bar Colors", fill="#FFFFFF", font=("Inter", 15 * -1))
     button_open_color_window = Button(hgWindow,text="Open \n Colors", command=csv_color_assignment_window)
-    button_open_color_window.place(x=21, y=115, width=70, height=38)
+    button_open_color_window.place(x=21, y=115+40, width=70, height=38)
 
-    hgCanvas.create_text(21,160, anchor="nw", text="4) Create Viz", fill="#FFFFFF", font=("Inter", 15 * -1))
+    hgCanvas.create_text(21,160+40, anchor="nw", text="4) Create Viz", fill="#FFFFFF", font=("Inter", 15 * -1))
     button_create_viz = Button(hgWindow,text="Create \n Viz", command=button_create_viz_clicked)
-    button_create_viz.place(x=21, y=180, width=70, height=38)
+    button_create_viz.place(x=21, y=180+40, width=70, height=38)
 
     
 

@@ -316,6 +316,7 @@ def create_viz(csv_dir_path,output_dir_path,search_metadata = {"scaling_range": 
     for i in range(0,num_hyperhistoglyphs):
 
         pin_and_ring = pd.read_csv(os.path.join(os.getcwd(),"resources","histo_glyph","hyperglyph_root_and_ring.csv"))
+        pin_tags = pd.read_csv(os.path.join(os.getcwd(),"resources","histo_glyph","tag_file_header.csv"))
 
         #move the base of the hyper histoglyph to proper xyz position in world.
         pin_and_ring = apply_location_to_glyph(pin_and_ring,0,hyper_loc_dict_list[i])
@@ -324,12 +325,20 @@ def create_viz(csv_dir_path,output_dir_path,search_metadata = {"scaling_range": 
         pin_and_ring.loc[pin_and_ring.index[0],["parent_id"]] = plane_id #last used is currently the plane. likely need to save this id.
         last_used_id = last_used_id + 1
         pin_and_ring.loc[pin_and_ring.index[0],['np_node_id','np_data_id','record_id']] = last_used_id
+        # #adding text to root node (pin) tags.
+        pin_tags.loc[pin_tags.index[0],'np_tag_id'] = last_used_id
+        pin_tags.loc[pin_tags.index[0],'record_id'] = last_used_id #associates this tag with the node_id of the correct element
+        pin_tags.loc[pin_tags.index[0],'title'] = None
+        pin_tags['title'] = pin_tags['title'].astype(str,copy=False)
+        pin_tags.loc[pin_tags.index[0],'title'] = search_metadata["histoglyph_root_tag_strings"][i]
+
         pin_and_ring.loc[pin_and_ring.index[1],["parent_id"]] = last_used_id
         last_used_id = last_used_id + 1
         pin_and_ring.loc[pin_and_ring.index[1],['np_node_id','np_data_id','record_id']] = last_used_id
         parent_id = last_used_id
 
         antzfile = pd.concat([antzfile,pin_and_ring])
+        tagfile = pd.concat([tagfile,pin_tags])
 
         for j in range(0,num_histoglyphs_on_hyperhistoglyph):
             working_glyph,last_used_id,working_tagfile = generate_single_histoglyph(parent_id,last_used_id,histoglyph_list_scaled[i][j],histoglyph_list_unscaled[i][j],j,histoglyph_list_normalized[i][j],search_metadata)
